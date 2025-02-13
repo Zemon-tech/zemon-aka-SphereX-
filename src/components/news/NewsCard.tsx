@@ -6,7 +6,7 @@ import Link from "next/link";
 
 interface NewsCardProps {
   news: {
-    id: number;
+    id: string;
     title: string;
     category: string;
     date: string;

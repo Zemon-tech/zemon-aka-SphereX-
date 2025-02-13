@@ -1,16 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import PageContainer from "@/components/layout/PageContainer";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchAndFilter from "@/components/layout/SearchAndFilter";
 import { Button } from "@/components/ui/button";
 import NewsForm from "@/components/news/NewsForm";
+import NewsCard from "@/components/news/NewsCard";
+import { useToast } from "@/components/ui/use-toast";
+
+interface NewsArticle {
+  _id: string;
+  title: string;
+  content: string;
+  excerpt: string;
+  category: string;
+  image: string;
+  tags: string[];
+  author: {
+    name: string;
+    avatar: string;
+  };
+  createdAt: string;
+  views: number;
+  likes: string[];
+}
 
 export default function NewsPage() {
+  const router = useRouter();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [news, setNews] = useState<NewsArticle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   const filterOptions = [
     { label: "All Categories", value: "all" },
@@ -20,13 +44,67 @@ export default function NewsPage() {
     { label: "Tutorials", value: "Tutorials" },
   ];
 
+  const fetchNews = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/news');
+      const data = await response.json();
+      if (data.success) {
+        setNews(data.data.news);
+      }
+    } catch (error) {
+      console.error('Error fetching news:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch news articles",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
   const handleSubmitNews = async (formData: FormData) => {
     try {
-      // TODO: Implement API call to create news
-      console.log("Creating news:", Object.fromEntries(formData));
-      setShowAddForm(false);
+      const newsData = {
+        title: formData.get('title'),
+        content: formData.get('content'),
+        excerpt: formData.get('content')?.toString().slice(0, 150) + '...',
+        category: formData.get('category'),
+        image: formData.get('image'),
+        tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim()),
+      };
+
+      const response = await fetch('http://localhost:5000/api/news', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newsData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "News article published successfully",
+        });
+        setShowAddForm(false);
+        fetchNews(); // Refresh the news list
+      } else {
+        throw new Error(data.message || 'Failed to publish news');
+      }
     } catch (error) {
       console.error("Error creating news:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to publish news",
+        variant: "destructive",
+      });
     }
   };
 
@@ -52,25 +130,36 @@ export default function NewsPage() {
         filterOptions={filterOptions}
       />
 
-      {/* Loading skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="rounded-lg border bg-card overflow-hidden animate-pulse">
-            <div className="h-48 bg-muted"></div>
-            <div className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-4 bg-muted rounded-full w-20"></div>
-                <div className="h-4 bg-muted rounded w-24"></div>
-              </div>
-              <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
-              <div className="h-4 bg-muted rounded w-full mb-4"></div>
-              <div className="h-4 bg-muted rounded w-1/4"></div>
+      {/* News Articles Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        {isLoading ? (
+          // Loading skeletons
+          Array(6).fill(0).map((_, i) => (
+            <div key={i} className="bg-card animate-pulse rounded-lg p-4 h-64" />
+          ))
+        ) : news.length > 0 ? (
+          news.map((article) => (
+            <div key={article._id} onClick={() => router.push(`/news/${article._id}`)}>
+              <NewsCard
+                news={{
+                  id: article._id,
+                  title: article.title,
+                  category: article.category || 'Uncategorized',
+                  date: new Date(article.createdAt).toLocaleDateString(),
+                  image: article.image || '/placeholder-news.jpg',
+                  excerpt: article.excerpt,
+                  views: article.views
+                }}
+              />
             </div>
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12 text-muted-foreground">
+            No news articles found
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Add News Form Modal */}
       {showAddForm && (
         <NewsForm
           onSubmit={handleSubmitNews}

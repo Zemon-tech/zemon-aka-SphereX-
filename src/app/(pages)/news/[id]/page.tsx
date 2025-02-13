@@ -1,187 +1,152 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, Heart, MessageSquare, Share2, Calendar, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useToast } from "@/components/ui/use-toast";
+import PageContainer from "@/components/layout/PageContainer";
 
-// Mock data for demonstration
-const mockNewsDetail = {
-  id: 1,
-  title: "Next.js 14 Released with Improved Performance",
-  content: `
-    <p>The Next.js team has announced the release of version 14, bringing significant performance improvements and new features to the popular React framework.</p>
-    
-    <h2>Key Features</h2>
-    <ul>
-      <li>Improved server components with partial rendering</li>
-      <li>Enhanced static optimization</li>
-      <li>Better TypeScript support</li>
-      <li>New middleware capabilities</li>
-    </ul>
-    
-    <p>The update focuses on developer experience and build performance, with some users reporting up to 40% faster build times...</p>
-  `,
+interface NewsDetail {
+  _id: string;
+  title: string;
+  content: string;
+  category: string;
+  image: string;
+  tags: string[];
   author: {
-    name: "John Doe",
-    avatar: "https://github.com/shadcn.png",
-    role: "Tech Writer",
-  },
-  category: "Framework Updates",
-  date: "2024-02-13",
-  image: "https://picsum.photos/800/400",
-  tags: ["nextjs", "react", "web-development"],
-  views: 1234,
-  likes: 567,
-  comments: [
-    {
-      id: 1,
-      user: {
-        name: "Alice Smith",
-        avatar: "https://github.com/shadcn.png",
-      },
-      content: "This is amazing! Can't wait to try the new features.",
-      date: "2024-02-13",
-    },
-    // Add more comments as needed
-  ],
-};
-
-export default function NewsDetailPage({ params }: { params: { id: string } }) {
-  const [isLiked, setIsLiked] = useState(false);
-  const [commentText, setCommentText] = useState("");
-
-  const handleComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implement comment submission
-    console.log("Comment submitted:", commentText);
-    setCommentText("");
+    name: string;
+    avatar: string;
   };
+  createdAt: string;
+  views: number;
+  likes: string[];
+}
+
+export default function NewsDetailPage() {
+  const params = useParams();
+  const { toast } = useToast();
+  const [news, setNews] = useState<NewsDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNewsDetail = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/news/${params.id}`);
+        const data = await response.json();
+        if (data.success) {
+          setNews(data.data);
+        } else {
+          throw new Error(data.message || 'Failed to fetch news detail');
+        }
+      } catch (error) {
+        console.error('Error fetching news detail:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load news article",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (params.id) {
+      fetchNewsDetail();
+    }
+  }, [params.id, toast]);
+
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <div className="animate-pulse space-y-4 py-8">
+          <div className="h-8 bg-muted rounded w-3/4"></div>
+          <div className="h-4 bg-muted rounded w-1/4"></div>
+          <div className="h-96 bg-muted rounded"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-muted rounded"></div>
+            <div className="h-4 bg-muted rounded"></div>
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (!news) {
+    return (
+      <PageContainer>
+        <div className="py-8 text-center">
+          <h1 className="text-2xl font-bold mb-4">Article not found</h1>
+          <Link href="/news" className="text-primary hover:underline">
+            Back to News
+          </Link>
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
-    <div className="container px-4 py-8">
+    <PageContainer className="py-8">
       <Link
         href="/news"
-        className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-8"
+        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
       >
         <ArrowLeft size={20} />
         Back to News
       </Link>
 
-      <motion.article
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl mx-auto"
-      >
-        <img
-          src={mockNewsDetail.image}
-          alt={mockNewsDetail.title}
-          className="w-full h-[400px] object-cover rounded-lg mb-8"
-        />
-
-        <div className="flex items-center gap-4 mb-6">
-          <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-            {mockNewsDetail.category}
-          </span>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar size={16} />
-            <span className="text-sm">{mockNewsDetail.date}</span>
+      <article>
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold mb-4">{news.title}</h1>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <img
+                src={news.author?.avatar || '/placeholder-avatar.jpg'}
+                alt={news.author?.name || 'Anonymous'}
+                className="w-6 h-6 rounded-full"
+              />
+              <span>{news.author?.name || 'Anonymous'}</span>
+            </div>
+            <span>•</span>
+            <time dateTime={news.createdAt}>
+              {new Date(news.createdAt).toLocaleDateString()}
+            </time>
+            <span>•</span>
+            <span>{news.views} views</span>
           </div>
-        </div>
+        </header>
 
-        <h1 className="text-4xl font-bold mb-6">{mockNewsDetail.title}</h1>
-
-        <div className="flex items-center gap-4 mb-8">
+        {news.image && (
           <img
-            src={mockNewsDetail.author.avatar}
-            alt={mockNewsDetail.author.name}
-            className="w-12 h-12 rounded-full"
+            src={news.image}
+            alt={news.title}
+            className="w-full h-[400px] object-cover rounded-lg mb-8"
           />
-          <div>
-            <p className="font-medium">{mockNewsDetail.author.name}</p>
-            <p className="text-sm text-muted-foreground">
-              {mockNewsDetail.author.role}
-            </p>
-          </div>
-        </div>
+        )}
 
-        <div
-          className="prose prose-zinc dark:prose-invert max-w-none mb-8"
-          dangerouslySetInnerHTML={{ __html: mockNewsDetail.content }}
-        />
-
-        <div className="flex flex-wrap gap-2 mb-8">
-          {mockNewsDetail.tags.map((tag) => (
-            <span
-              key={tag}
-              className="px-3 py-1 rounded-full bg-accent text-accent-foreground text-sm"
-            >
-              #{tag}
-            </span>
+        <div className="prose prose-lg max-w-none">
+          {news.content.split('\n').map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
           ))}
         </div>
 
-        <div className="flex items-center gap-6 py-4 border-t border-b mb-8">
-          <button
-            onClick={() => setIsLiked(!isLiked)}
-            className={`flex items-center gap-2 ${
-              isLiked ? "text-red-500" : "text-muted-foreground"
-            }`}
-          >
-            <Heart size={20} className={isLiked ? "fill-current" : ""} />
-            <span>{mockNewsDetail.likes + (isLiked ? 1 : 0)}</span>
-          </button>
-          <button className="flex items-center gap-2 text-muted-foreground">
-            <MessageSquare size={20} />
-            <span>{mockNewsDetail.comments.length}</span>
-          </button>
-          <button className="flex items-center gap-2 text-muted-foreground ml-auto">
-            <Share2 size={20} />
-            Share
-          </button>
-        </div>
-
-        {/* Comments Section */}
-        <section className="mt-12">
-          <h2 className="text-2xl font-bold mb-6">Comments</h2>
-          
-          <form onSubmit={handleComment} className="mb-8">
-            <textarea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Add a comment..."
-              className="w-full p-4 rounded-lg border bg-background min-h-[100px] mb-4"
-            />
-            <button
-              type="submit"
-              className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              Post Comment
-            </button>
-          </form>
-
-          <div className="space-y-6">
-            {mockNewsDetail.comments.map((comment) => (
-              <div key={comment.id} className="flex gap-4">
-                <img
-                  src={comment.user.avatar}
-                  alt={comment.user.name}
-                  className="w-10 h-10 rounded-full"
-                />
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">{comment.user.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {comment.date}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground">{comment.content}</p>
-                </div>
-              </div>
-            ))}
+        {news.tags && news.tags.length > 0 && (
+          <div className="mt-8 pt-8 border-t">
+            <h2 className="text-lg font-semibold mb-4">Tags</h2>
+            <div className="flex flex-wrap gap-2">
+              {news.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 bg-secondary rounded-full text-sm"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
-        </section>
-      </motion.article>
-    </div>
+        )}
+      </article>
+    </PageContainer>
   );
 } 

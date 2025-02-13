@@ -27,13 +27,24 @@ export default function EventsPage() {
         {/* Loading skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="p-6 rounded-lg border bg-card animate-pulse">
-              <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
-              <div className="flex justify-between items-center mb-4">
-                <div className="h-4 bg-muted rounded w-1/3"></div>
-                <div className="h-6 bg-muted rounded w-20"></div>
+            <div key={i} className="rounded-lg border bg-card overflow-hidden animate-pulse">
+              <div className="h-48 bg-muted"></div>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-4 bg-muted rounded w-32"></div>
+                  <div className="h-4 bg-muted rounded w-20"></div>
+                </div>
+                <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
+                <div className="h-4 bg-muted rounded w-full mb-4"></div>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="h-4 bg-muted rounded w-24"></div>
+                  <div className="h-4 bg-muted rounded w-24"></div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-6 bg-muted rounded-full w-16"></div>
+                  <div className="h-6 bg-muted rounded-full w-16"></div>
+                </div>
               </div>
-              <div className="h-4 bg-muted rounded w-1/4"></div>
             </div>
           ))}
         </div>

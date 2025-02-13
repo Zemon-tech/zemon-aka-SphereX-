@@ -9,6 +9,8 @@ import PageHeader from "@/components/layout/PageHeader";
 import SearchAndFilter from "@/components/layout/SearchAndFilter";
 import GridLayout from "@/components/layout/GridLayout";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import ToolForm from "@/components/store/ToolForm";
 
 // Mock data for demonstration
 const mockTools = [
@@ -54,8 +56,8 @@ export default function StorePage() {
 
   const filterOptions = [
     { label: "All Categories", value: "all" },
-    { label: "Productivity", value: "Productivity" },
     { label: "Developer Tools", value: "Developer Tools" },
+    { label: "Productivity", value: "Productivity" },
     { label: "Design", value: "Design" },
     { label: "Analytics", value: "Analytics" },
   ];
@@ -68,25 +70,70 @@ export default function StorePage() {
     return matchesSearch && matchesCategory;
   });
 
+  const handleSubmitTool = async (formData: FormData) => {
+    try {
+      // TODO: Implement API call to create tool
+      console.log("Creating tool:", Object.fromEntries(formData));
+      setShowAddForm(false);
+    } catch (error) {
+      console.error("Error creating tool:", error);
+    }
+  };
+
   return (
     <PageContainer className="py-6">
-      <div className="space-y-8">
-        {/* Loading skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="p-6 rounded-lg border bg-card animate-pulse">
-              <div className="h-48 bg-muted rounded-lg mb-4"></div>
-              <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-muted rounded w-full mb-4"></div>
-              <div className="h-4 bg-muted rounded w-1/2 mb-6"></div>
-              <div className="flex justify-between items-center">
-                <div className="h-8 bg-muted rounded w-24"></div>
-                <div className="h-4 bg-muted rounded w-16"></div>
-              </div>
+      <PageHeader
+        title="Developer Tools"
+        description="Discover and share powerful tools for developers"
+        action={
+          <Button className="gap-2" onClick={() => setShowAddForm(true)}>
+            <Plus className="w-4 h-4" />
+            Submit Tool
+          </Button>
+        }
+      />
+
+      <SearchAndFilter
+        searchPlaceholder="Search developer tools..."
+        searchValue=""
+        onSearchChange={() => {}}
+        filterValue="all"
+        onFilterChange={() => {}}
+        filterOptions={filterOptions}
+        extraActions={
+          <div className="flex gap-2">
+            <select className="px-4 py-2.5 rounded-lg border bg-background">
+              <option value="popular">Most Popular</option>
+              <option value="recent">Recently Added</option>
+              <option value="trending">Trending</option>
+            </select>
+          </div>
+        }
+      />
+
+      {/* Loading skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="p-6 rounded-lg border bg-card animate-pulse">
+            <div className="h-48 bg-muted rounded-lg mb-4"></div>
+            <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-muted rounded w-full mb-4"></div>
+            <div className="h-4 bg-muted rounded w-1/2 mb-6"></div>
+            <div className="flex justify-between items-center">
+              <div className="h-8 bg-muted rounded w-24"></div>
+              <div className="h-4 bg-muted rounded w-16"></div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
+
+      {/* Add Tool Form Modal */}
+      {showAddForm && (
+        <ToolForm
+          onSubmit={handleSubmitTool}
+          onCancel={() => setShowAddForm(false)}
+        />
+      )}
     </PageContainer>
   );
 } 

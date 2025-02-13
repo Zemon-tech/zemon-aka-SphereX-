@@ -1,159 +1,349 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Code, Users, Zap } from "lucide-react";
-import Link from "next/link";
-import PageContainer from "@/components/layout/PageContainer";
-import { Card, CardContent } from "@/components/ui/card";
+import { 
+  ArrowRight, Code, Users, Star, GitBranch, Wrench, Calendar, 
+  Newspaper, CheckCircle, Sparkles, MessageSquare, Heart
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-// Components from previous implementation
-const SparklesBackground = () => {
-  const sparkles = Array.from({ length: 20 }, (_, i) => ({
-    top: `${(i * 5) % 100}%`,
-    left: `${((i * 7) + 3) % 100}%`,
-    delay: `${(i * 0.2)}s`
-  }));
-
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-background to-background/80" />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 [--sparkle-color:rgb(var(--primary))] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"
-      >
-        {sparkles.map((sparkle, i) => (
-          <div
-            key={i}
-            className="absolute animate-sparkle"
-            style={{
-              top: sparkle.top,
-              left: sparkle.left,
-              width: "2px",
-              height: "2px",
-              backgroundColor: "var(--sparkle-color)",
-              borderRadius: "50%",
-              animationDelay: sparkle.delay,
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const StatsCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
-  <Card>
-    <CardContent className="flex items-center gap-4 p-6">
-      <div className="p-3 rounded-full bg-primary/10">
-        <Icon className="w-6 h-6 text-primary" />
-      </div>
-      <div>
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold">{value}</p>
-      </div>
-    </CardContent>
-  </Card>
-);
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 
 export default function HomePage() {
+  const features = [
+    {
+      icon: <Code className="w-6 h-6" />,
+      title: "Open Source Projects",
+      description: "Discover and contribute to innovative projects from developers worldwide",
+      link: "/repos",
+    },
+    {
+      icon: <Wrench className="w-6 h-6" />,
+      title: "Developer Tools",
+      description: "Find the best tools to enhance your development workflow",
+      link: "/store",
+    },
+    {
+      icon: <Calendar className="w-6 h-6" />,
+      title: "Tech Events",
+      description: "Stay updated with hackathons, workshops, and conferences",
+      link: "/events",
+    },
+    {
+      icon: <Newspaper className="w-6 h-6" />,
+      title: "Tech News",
+      description: "Get the latest updates from the tech world",
+      link: "/news",
+    },
+  ];
+
+  const stats = [
+    { number: "50K+", label: "Elite Developers" },
+    { number: "10K+", label: "Successful Projects" },
+    { number: "2M+", label: "Monthly Visitors" },
+    { number: "150+", label: "Partner Companies" },
+  ];
+
+  const testimonials = [
+    {
+      name: "Sarah Chen",
+      role: "Senior Developer",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=sarah",
+      content: "Zemon has transformed how I collaborate on open source projects. The community is incredibly supportive!",
+    },
+    {
+      name: "Alex Kumar",
+      role: "Tech Lead",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=alex",
+      content: "The quality of projects and tools I've discovered here is outstanding. A must-have for any serious developer.",
+    },
+    {
+      name: "Maria Rodriguez",
+      role: "Full Stack Developer",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=maria",
+      content: "The developer community here is amazing. I've learned so much from collaborating with others.",
+    },
+  ];
+
+  const highlights = [
+    { icon: <CheckCircle className="w-5 h-5" />, text: "Active Community Support" },
+    { icon: <Sparkles className="w-5 h-5" />, text: "Weekly Tech Events" },
+    { icon: <MessageSquare className="w-5 h-5" />, text: "Expert Discussions" },
+    { icon: <Heart className="w-5 h-5" />, text: "Open Source First" },
+  ];
+
   return (
-    <div className="relative min-h-screen">
-      <SparklesBackground />
-      <PageContainer>
-        {/* Hero Section */}
-        <section className="py-20 relative">
+    <div className="min-h-screen">
+      {/* Hero Section - Enhanced */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
+        <div className="absolute inset-0">
+          <svg
+            className="absolute inset-0 h-full w-full"
+            style={{ 
+              maskImage: 'linear-gradient(to bottom, transparent, black)',
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent, black)'
+            }}
+          >
+            <defs>
+              <pattern
+                id="grid"
+                width="40"
+                height="40"
+                patternUnits="userSpaceOnUse"
+                patternTransform="rotate(0)"
+              >
+                <rect width="100%" height="100%" fill="none" />
+                <path
+                  d="M0 0h40v40H0z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  className="text-gray-900/[0.05]"
+                />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
+        </div>
+        <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-3xl mx-auto"
+            className="text-center max-w-3xl mx-auto space-y-8"
           >
-            <Badge className="mb-4" variant="secondary">
-              ✨ Welcome to SphereX
+            <Badge className="px-4 py-2 rounded-full mb-4" variant="secondary">
+              🚀 Join 10,000+ developers
             </Badge>
-            <h1 className="text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-primary/60">
-              Building the Future of Open Source
+            <h1 className="text-4xl md:text-6xl font-bold text-[#1e293b]">
+              Build Your Tech Legacy
             </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Join our community of developers, contribute to amazing projects, and shape the future of software development.
+            <p className="text-xl text-muted-foreground">
+              Connect with elite developers, showcase your innovations, and shape the future of technology.
             </p>
-            <div className="flex items-center justify-center gap-4">
-              <Button size="lg" className="gap-2">
-                <Sparkles className="w-4 h-4" />
-                Explore Projects
+            <div className="flex gap-4 justify-center">
+              <Button size="lg" className="gap-2 shadow-lg shadow-primary/20">
+                Get Started <ArrowRight className="w-4 h-4" />
               </Button>
-              <Button size="lg" variant="outline" className="gap-2">
-                <Users className="w-4 h-4" />
-                Join Events
+              <Button size="lg" variant="outline">
+                View Opportunities
               </Button>
+            </div>
+            <div className="pt-8 flex justify-center gap-8">
+              {highlights.map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                >
+                  <span className="text-primary">{item.icon}</span>
+                  {item.text}
+                </motion.div>
+              ))}
             </div>
           </motion.div>
-        </section>
+        </div>
+      </section>
 
-        {/* Stats Section */}
-        <section className="py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatsCard icon={Code} label="Open Source Projects" value="500+" />
-            <StatsCard icon={Users} label="Community Members" value="10,000+" />
-            <StatsCard icon={Zap} label="Monthly Downloads" value="1M+" />
-          </div>
-        </section>
-
-        {/* Featured Projects Section */}
-        <section className="py-16">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Featured Projects</h2>
-              <p className="text-muted-foreground">
-                Discover trending open source projects and contribute to the community.
-              </p>
-            </div>
-            <Button variant="link" className="gap-2">
-              View All <ArrowRight className="w-4 h-4" />
-            </Button>
-          </div>
-          {/* Loading skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
-                  <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
-                  <div className="h-4 bg-muted rounded w-full mb-4"></div>
-                  <div className="flex justify-between items-center">
-                    <div className="h-4 bg-muted rounded w-1/4"></div>
-                    <div className="h-4 bg-muted rounded w-1/4"></div>
-                  </div>
+      {/* Stats Section - Enhanced */}
+      <section className="py-20 bg-muted/50 relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px]" />
+        <div className="container relative">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <Card key={stat.label}>
+                <CardContent className="p-6 text-center">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="text-3xl md:text-4xl font-bold text-primary">{stat.number}</div>
+                    <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+                  </motion.div>
                 </CardContent>
               </Card>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Enhanced CTA Section */}
-        <section className="py-16">
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent" />
-            <CardContent className="relative p-8 text-center">
+      {/* Features Section */}
+      <section className="py-20">
+        <div className="container">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold">Everything You Need</h2>
+            <p className="text-muted-foreground mt-2">
+              A complete platform for developers to learn, share, and grow together
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, index) => (
+              <Link href={feature.link} key={feature.title}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="p-6 rounded-lg border bg-card hover:border-primary/50 transition-all h-full"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-4">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-muted-foreground text-sm">{feature.description}</p>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-muted/50">
+        <div className="container">
+          <div className="text-center mb-16">
+            <Badge variant="secondary" className="mb-4">Testimonials</Badge>
+            <h2 className="text-3xl font-bold">Loved by Developers</h2>
+            <p className="text-muted-foreground mt-2">
+              See what our community members have to say
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
               <motion.div
+                key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: index * 0.1 }}
               >
-                <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-                <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-                  Join our growing community of developers and contributors. Start exploring projects, 
-                  sharing ideas, and building the future together.
-                </p>
-                <Button size="lg" className="gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Join Community
-                </Button>
+                <Card className="h-full">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar>
+                        <AvatarImage src={testimonial.avatar} />
+                        <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-semibold">{testimonial.name}</div>
+                        <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                      </div>
+                    </div>
+                    <p className="text-muted-foreground">{testimonial.content}</p>
+                  </CardContent>
+                </Card>
               </motion.div>
-            </CardContent>
-          </Card>
-        </section>
-      </PageContainer>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Projects Section - New */}
+      <section className="py-20">
+        <div className="container">
+          <div className="text-center mb-16">
+            <Badge variant="secondary" className="mb-4">Featured Projects</Badge>
+            <h2 className="text-3xl font-bold">Trending This Week</h2>
+            <p className="text-muted-foreground mt-2">
+              Discover popular projects from our community
+            </p>
+          </div>
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="justify-center mb-8">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="web">Web Dev</TabsTrigger>
+              <TabsTrigger value="mobile">Mobile</TabsTrigger>
+              <TabsTrigger value="ai">AI/ML</TabsTrigger>
+            </TabsList>
+            <TabsContent value="all">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Add project cards here */}
+              </div>
+            </TabsContent>
+            {/* Add other tab contents */}
+          </Tabs>
+        </div>
+      </section>
+
+      {/* Community Section */}
+      <section className="py-20 bg-muted/50">
+        <div className="container">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-6"
+            >
+              <h2 className="text-3xl font-bold">Where Innovation Happens</h2>
+              <p className="text-muted-foreground">
+                Be part of an elite network of developers building the next generation of technology. Your expertise and innovations deserve a powerful platform.
+              </p>
+              <div className="flex gap-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  <span>Elite Network</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GitBranch className="w-5 h-5 text-primary" />
+                  <span>Industry Leaders</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-primary" />
+                  <span>Top Opportunities</span>
+                </div>
+              </div>
+              <Button className="gap-2">
+                Start Building <ArrowRight className="w-4 h-4" />
+              </Button>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="grid grid-cols-2 gap-4"
+            >
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="aspect-square rounded-lg bg-card border animate-pulse" />
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section - Enhanced */}
+      <section className="py-20 bg-primary/5 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `radial-gradient(#000 1px, transparent 1px)`,
+            backgroundSize: '24px 24px'
+          }}
+        />
+        <div className="container relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-3xl mx-auto text-center space-y-8"
+          >
+            <Badge variant="secondary" className="mb-4">Limited Access</Badge>
+            <h2 className="text-3xl font-bold">Ready to Make an Impact?</h2>
+            <p className="text-muted-foreground">
+              Join an exclusive platform where top developers collaborate on groundbreaking projects.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Button size="lg" className="gap-2 shadow-lg shadow-primary/20">
+                Apply Now <ArrowRight className="w-4 h-4" />
+              </Button>
+              <Button size="lg" variant="outline">
+                View Benefits
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
     </div>
   );
 }

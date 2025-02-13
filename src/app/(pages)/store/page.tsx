@@ -8,6 +8,7 @@ import PageContainer from "@/components/layout/PageContainer";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchAndFilter from "@/components/layout/SearchAndFilter";
 import GridLayout from "@/components/layout/GridLayout";
+import { motion } from "framer-motion";
 
 // Mock data for demonstration
 const mockTools = [
@@ -68,62 +69,23 @@ export default function StorePage() {
   });
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Web Store"
-        description="Discover and share amazing web tools and applications."
-        action={
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-          >
-            <Plus size={20} />
-            Submit Tool
-          </button>
-        }
-      />
-
-      <SearchAndFilter
-        searchPlaceholder="Search tools..."
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        filterValue={selectedCategory}
-        onFilterChange={setSelectedCategory}
-        filterOptions={filterOptions}
-      />
-
-      <GridLayout columns={3}>
-        {filteredTools.map((tool) => (
-          <StoreCard
-            key={tool.id}
-            tool={tool}
-            onEdit={() => setEditingTool(tool)}
-            onDelete={() => setDeletingTool(tool)}
-          />
-        ))}
-      </GridLayout>
-
-      {/* TODO: Add ToolForm component for adding/editing tools */}
-      {/* {(showAddForm || editingTool) && (
-        <ToolForm
-          initialData={editingTool || undefined}
-          onSubmit={editingTool ? handleEditTool : handleAddTool}
-          onCancel={() => {
-            setShowAddForm(false);
-            setEditingTool(null);
-          }}
-          isEdit={!!editingTool}
-        />
-      )} */}
-
-      {deletingTool && (
-        <ConfirmDialog
-          title="Delete Tool"
-          message="Are you sure you want to delete this tool? This action cannot be undone."
-          onConfirm={handleDeleteTool}
-          onCancel={() => setDeletingTool(null)}
-        />
-      )}
+    <PageContainer className="py-6">
+      <div className="space-y-8">
+        {/* Loading skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="p-6 rounded-lg border bg-card animate-pulse">
+              <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
+              <div className="h-4 bg-muted rounded w-full mb-4"></div>
+              <div className="h-4 bg-muted rounded w-1/2 mb-6"></div>
+              <div className="flex justify-between items-center">
+                <div className="h-8 bg-muted rounded w-24"></div>
+                <div className="h-4 bg-muted rounded w-16"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </PageContainer>
   );
 } 

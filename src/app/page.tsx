@@ -77,9 +77,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Enhanced */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
+      {/* Hero Section - Enhanced with better gradient */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-background via-background to-muted/50">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
         <div className="absolute inset-0">
           <svg
             className="absolute inset-0 h-full w-full"
@@ -150,20 +150,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Section - Enhanced */}
-      <section className="py-20 bg-muted/50 relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px]" />
+      {/* Stats Section - Smoother transition */}
+      <section className="py-20 bg-gradient-to-b from-muted/50 to-background relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-white/5" />
         <div className="container relative">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <Card key={stat.label}>
+              <Card key={stat.label} className="bg-background/60 backdrop-blur-sm border-primary/5 hover:border-primary/20 transition-all">
                 <CardContent className="p-6 text-center">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                   >
-                    <div className="text-3xl md:text-4xl font-bold text-primary">{stat.number}</div>
+                    <div className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">{stat.number}</div>
                     <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
                   </motion.div>
                 </CardContent>
@@ -173,8 +173,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20">
+      {/* Features Section - Clean background */}
+      <section className="py-20 bg-background">
         <div className="container">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold">Everything You Need</h2>
@@ -189,10 +189,10 @@ export default function HomePage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="p-6 rounded-lg border bg-card hover:border-primary/50 transition-all h-full"
+                  className="p-6 rounded-lg border bg-gradient-to-br from-background to-muted/30 hover:border-primary/50 transition-all h-full group"
                 >
-                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-4">
-                    {feature.icon}
+                  <div className="w-12 h-12 rounded-lg bg-primary/5 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
+                    <div className="text-primary">{feature.icon}</div>
                   </div>
                   <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                   <p className="text-muted-foreground text-sm">{feature.description}</p>
@@ -203,8 +203,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-20 bg-muted/50">
+      {/* Testimonials Section - Subtle gradient */}
+      <section className="py-20 bg-gradient-to-b from-background to-muted/30">
         <div className="container">
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">Testimonials</Badge>
@@ -221,7 +221,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="h-full">
+                <Card className="h-full bg-background/60 backdrop-blur-sm hover:border-primary/20 transition-all">
                   <CardContent className="p-6 space-y-4">
                     <div className="flex items-center gap-4">
                       <Avatar>
@@ -242,8 +242,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Projects Section - New */}
-      <section className="py-20">
+      {/* Featured Projects Section - Clean background */}
+      <section className="py-20 bg-background">
         <div className="container">
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">Featured Projects</Badge>
@@ -269,8 +269,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Community Section */}
-      <section className="py-20 bg-muted/50">
+      {/* Community Section - Gradient background */}
+      <section className="py-20 bg-gradient-to-b from-background via-muted/20 to-primary/5">
         <div className="container">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -313,15 +313,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section - Enhanced */}
-      <section className="py-20 bg-primary/5 relative overflow-hidden">
-        <div 
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `radial-gradient(#000 1px, transparent 1px)`,
-            backgroundSize: '24px 24px'
-          }}
-        />
+      {/* CTA Section - Final gradient */}
+      <section className="py-20 bg-gradient-to-b from-primary/5 to-background relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-white/5" />
         <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

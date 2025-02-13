@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Filter, Bell } from "lucide-react";
+import { Search, Filter, Bell, Plus } from "lucide-react";
+import NewsForm from "@/components/news/NewsForm";
+import NewsCard from "@/components/news/NewsCard";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import PageContainer from "@/components/layout/PageContainer";
+import PageHeader from "@/components/layout/PageHeader";
+import SearchAndFilter from "@/components/layout/SearchAndFilter";
+import GridLayout from "@/components/layout/GridLayout";
 
 // Mock data for demonstration
 const mockNews = [
@@ -30,108 +37,98 @@ const mockNews = [
 export default function NewsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingNews, setEditingNews] = useState<typeof mockNews[0] | null>(null);
+  const [deletingNews, setDeletingNews] = useState<typeof mockNews[0] | null>(null);
+
+  const handleAddNews = async (formData: FormData) => {
+    // TODO: Implement news creation
+    console.log("Creating news:", Object.fromEntries(formData));
+    setShowAddForm(false);
+  };
+
+  const handleEditNews = async (formData: FormData) => {
+    // TODO: Implement news update
+    console.log("Updating news:", Object.fromEntries(formData));
+    setEditingNews(null);
+  };
+
+  const handleDeleteNews = async () => {
+    // TODO: Implement news deletion
+    console.log("Deleting news:", deletingNews?.id);
+    setDeletingNews(null);
+  };
+
+  const filterOptions = [
+    { label: "All Categories", value: "all" },
+    { label: "Framework Updates", value: "Framework Updates" },
+    { label: "Security", value: "Security" },
+    { label: "Community", value: "Community" },
+    { label: "Tutorials", value: "Tutorials" },
+  ];
 
   const filteredNews = mockNews.filter((news) => {
-    const matchesSearch = news.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || news.category === selectedCategory;
+    const matchesSearch = news.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || news.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   return (
-    <div className="container px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-4">Tech News & Updates</h1>
-        <p className="text-muted-foreground">
-          Stay informed with the latest technology news and community updates.
-        </p>
-      </div>
-
-      {/* Search and Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search news..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border bg-background"
-          />
-        </div>
-        <div className="flex gap-4">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 rounded-lg border bg-background"
+    <PageContainer>
+      <PageHeader
+        title="Tech News & Updates"
+        description="Stay informed with the latest technology news and community updates."
+        action={
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
           >
-            <option value="all">All Categories</option>
-            <option value="Framework Updates">Framework Updates</option>
-            <option value="Security">Security</option>
-            <option value="Community">Community</option>
-          </select>
-          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
-            <Bell size={20} />
-            Subscribe
+            <Plus size={20} />
+            Add News
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* News Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <SearchAndFilter
+        searchPlaceholder="Search news..."
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        filterValue={selectedCategory}
+        onFilterChange={setSelectedCategory}
+        filterOptions={filterOptions}
+      />
+
+      <GridLayout columns={3}>
         {filteredNews.map((news) => (
-          <motion.article
+          <NewsCard
             key={news.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-lg border bg-card overflow-hidden"
-          >
-            <img
-              src={news.image}
-              alt={news.title}
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                  {news.category}
-                </span>
-                <span className="text-xs text-muted-foreground">{news.date}</span>
-              </div>
-              <h2 className="text-xl font-semibold mb-2">{news.title}</h2>
-              <p className="text-muted-foreground text-sm mb-4">
-                {news.excerpt}
-              </p>
-              <button className="text-primary hover:underline text-sm">
-                Read more
-              </button>
-            </div>
-          </motion.article>
+            news={news}
+            onEdit={() => setEditingNews(news)}
+            onDelete={() => setDeletingNews(news)}
+          />
         ))}
-      </div>
+      </GridLayout>
 
-      {/* Subscription CTA */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="mt-12 p-8 rounded-lg bg-primary/5 text-center"
-      >
-        <h2 className="text-2xl font-semibold mb-4">
-          Never Miss Important Updates
-        </h2>
-        <p className="text-muted-foreground mb-6">
-          Subscribe to our premium news service for exclusive content and early
-          access to events.
-        </p>
-        <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-          <Bell size={20} />
-          Subscribe Now
-        </button>
-      </motion.div>
-    </div>
+      {(showAddForm || editingNews) && (
+        <NewsForm
+          initialData={editingNews || undefined}
+          onSubmit={editingNews ? handleEditNews : handleAddNews}
+          onCancel={() => {
+            setShowAddForm(false);
+            setEditingNews(null);
+          }}
+          isEdit={!!editingNews}
+        />
+      )}
+
+      {deletingNews && (
+        <ConfirmDialog
+          title="Delete News Article"
+          message="Are you sure you want to delete this news article? This action cannot be undone."
+          onConfirm={handleDeleteNews}
+          onCancel={() => setDeletingNews(null)}
+        />
+      )}
+    </PageContainer>
   );
 } 

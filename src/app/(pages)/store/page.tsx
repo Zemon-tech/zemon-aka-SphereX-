@@ -1,18 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  Search,
-  Star,
-  Plus,
-  ExternalLink,
-  Filter,
-  ArrowUpRight,
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import StoreCard from "@/components/store/StoreCard";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import PageContainer from "@/components/layout/PageContainer";
+import PageHeader from "@/components/layout/PageHeader";
+import SearchAndFilter from "@/components/layout/SearchAndFilter";
+import GridLayout from "@/components/layout/GridLayout";
 
 // Mock data for demonstration
-const mockProjects = [
+const mockTools = [
   {
     id: 1,
     title: "DevFlow",
@@ -20,165 +18,112 @@ const mockProjects = [
     image: "https://picsum.photos/400/300",
     rating: 4.8,
     reviews: 124,
-    author: "TechLabs",
     category: "Productivity",
     tags: ["project-management", "developers", "agile"],
     url: "https://devflow.example.com",
+    github: "https://github.com/techlabs/devflow",
   },
-  {
-    id: 2,
-    title: "CodeSnap",
-    description: "Beautiful code screenshot generator with syntax highlighting",
-    image: "https://picsum.photos/400/301",
-    rating: 4.6,
-    reviews: 89,
-    author: "DevTools Inc",
-    category: "Developer Tools",
-    tags: ["code", "screenshot", "sharing"],
-    url: "https://codesnap.example.com",
-  },
-  // Add more mock projects as needed
+  // Add more mock tools as needed
 ];
 
 export default function StorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingTool, setEditingTool] = useState<typeof mockTools[0] | null>(null);
+  const [deletingTool, setDeletingTool] = useState<typeof mockTools[0] | null>(null);
 
-  const filteredProjects = mockProjects.filter((project) => {
+  const handleAddTool = async (formData: FormData) => {
+    // TODO: Implement tool creation
+    console.log("Creating tool:", Object.fromEntries(formData));
+    setShowAddForm(false);
+  };
+
+  const handleEditTool = async (formData: FormData) => {
+    // TODO: Implement tool update
+    console.log("Updating tool:", Object.fromEntries(formData));
+    setEditingTool(null);
+  };
+
+  const handleDeleteTool = async () => {
+    // TODO: Implement tool deletion
+    console.log("Deleting tool:", deletingTool?.id);
+    setDeletingTool(null);
+  };
+
+  const filterOptions = [
+    { label: "All Categories", value: "all" },
+    { label: "Productivity", value: "Productivity" },
+    { label: "Developer Tools", value: "Developer Tools" },
+    { label: "Design", value: "Design" },
+    { label: "Analytics", value: "Analytics" },
+  ];
+
+  const filteredTools = mockTools.filter((tool) => {
     const matchesSearch =
-      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || project.category === selectedCategory;
+      tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tool.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || tool.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   return (
-    <div className="container px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-4">Web Store</h1>
-        <p className="text-muted-foreground">
-          Discover and share amazing web tools and applications.
-        </p>
-      </div>
-
-      {/* Search and Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search projects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border bg-background"
-          />
-        </div>
-        <div className="flex gap-4">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 rounded-lg border bg-background"
+    <PageContainer>
+      <PageHeader
+        title="Web Store"
+        description="Discover and share amazing web tools and applications."
+        action={
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
           >
-            <option value="all">All Categories</option>
-            <option value="Productivity">Productivity</option>
-            <option value="Developer Tools">Developer Tools</option>
-            <option value="Design">Design</option>
-            <option value="Analytics">Analytics</option>
-          </select>
-          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
             <Plus size={20} />
-            Submit Project
+            Submit Tool
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProjects.map((project) => (
-          <motion.article
-            key={project.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-lg border bg-card overflow-hidden group"
-          >
-            <div className="relative">
-              <img
-                src={project.image}
-                alt={project.title}
-                className="w-full h-48 object-cover"
-              />
-              <a
-                href={project.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-              >
-                <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-black">
-                  <ExternalLink size={20} />
-                  Visit Site
-                </button>
-              </a>
-            </div>
+      <SearchAndFilter
+        searchPlaceholder="Search tools..."
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        filterValue={selectedCategory}
+        onFilterChange={setSelectedCategory}
+        filterOptions={filterOptions}
+      />
 
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-semibold">{project.title}</h2>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-primary text-primary" />
-                  <span className="text-sm font-medium">{project.rating}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({project.reviews})
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-muted-foreground text-sm mb-4">
-                {project.description}
-              </p>
-
-              <div className="flex flex-wrap gap-2 mb-4">
-                {project.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">by {project.author}</span>
-                <span className="px-2 py-1 rounded bg-primary/10 text-primary">
-                  {project.category}
-                </span>
-              </div>
-            </div>
-          </motion.article>
+      <GridLayout columns={3}>
+        {filteredTools.map((tool) => (
+          <StoreCard
+            key={tool.id}
+            tool={tool}
+            onEdit={() => setEditingTool(tool)}
+            onDelete={() => setDeletingTool(tool)}
+          />
         ))}
-      </div>
+      </GridLayout>
 
-      {/* Submit Project CTA */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="mt-12 p-8 rounded-lg bg-primary/5 text-center"
-      >
-        <h2 className="text-2xl font-semibold mb-4">
-          Have a Project to Share?
-        </h2>
-        <p className="text-muted-foreground mb-6">
-          Submit your web application or tool to our store and reach thousands of
-          developers.
-        </p>
-        <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus size={20} />
-          Submit Your Project
-        </button>
-      </motion.div>
-    </div>
+      {/* TODO: Add ToolForm component for adding/editing tools */}
+      {/* {(showAddForm || editingTool) && (
+        <ToolForm
+          initialData={editingTool || undefined}
+          onSubmit={editingTool ? handleEditTool : handleAddTool}
+          onCancel={() => {
+            setShowAddForm(false);
+            setEditingTool(null);
+          }}
+          isEdit={!!editingTool}
+        />
+      )} */}
+
+      {deletingTool && (
+        <ConfirmDialog
+          title="Delete Tool"
+          message="Are you sure you want to delete this tool? This action cannot be undone."
+          onConfirm={handleDeleteTool}
+          onCancel={() => setDeletingTool(null)}
+        />
+      )}
+    </PageContainer>
   );
 } 

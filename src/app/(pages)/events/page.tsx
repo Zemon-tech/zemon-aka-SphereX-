@@ -12,6 +12,13 @@ import {
   Plus,
   Trophy,
 } from "lucide-react";
+import EventCard from "@/components/events/EventCard";
+import EventForm from "@/components/events/EventForm";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import PageContainer from "@/components/layout/PageContainer";
+import PageHeader from "@/components/layout/PageHeader";
+import SearchAndFilter from "@/components/layout/SearchAndFilter";
+import GridLayout from "@/components/layout/GridLayout";
 
 // Mock data for demonstration
 const mockEvents = [
@@ -48,167 +55,145 @@ const mockEvents = [
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("all");
-  const [selectedMonth, setSelectedMonth] = useState("all");
+  const [selectedType, setSelectedType] = useState("all");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<typeof mockEvents[0] | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState<typeof mockEvents[0] | null>(null);
+
+  const handleAddEvent = async (formData: FormData) => {
+    // TODO: Implement event creation
+    console.log("Creating event:", Object.fromEntries(formData));
+    setShowAddForm(false);
+  };
+
+  const handleEditEvent = async (formData: FormData) => {
+    // TODO: Implement event update
+    console.log("Updating event:", Object.fromEntries(formData));
+    setEditingEvent(null);
+  };
+
+  const handleDeleteEvent = async () => {
+    // TODO: Implement event deletion
+    console.log("Deleting event:", deletingEvent?.id);
+    setDeletingEvent(null);
+  };
 
   const filteredEvents = mockEvents.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLocation =
-      selectedLocation === "all" || event.location === selectedLocation;
-    const matchesMonth =
-      selectedMonth === "all" ||
-      new Date(event.date).getMonth() === parseInt(selectedMonth);
-    return matchesSearch && matchesLocation && matchesMonth;
+    const matchesType =
+      selectedType === "all" ||
+      (selectedType === "free" && event.price === "Free") ||
+      (selectedType === "paid" && event.price !== "Free");
+    return matchesSearch && matchesType;
   });
 
+  // Sort events by date
+  const sortedEvents = [...filteredEvents].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  const upcomingEvents = sortedEvents.filter(
+    (event) => new Date(event.date) >= new Date()
+  );
+  
+  const pastEvents = sortedEvents.filter(
+    (event) => new Date(event.date) < new Date()
+  );
+
+  const filterOptions = [
+    { label: "All Events", value: "all" },
+    { label: "Free Events", value: "free" },
+    { label: "Paid Events", value: "paid" },
+  ];
+
   return (
-    <div className="container px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-4">Tech Events & Hackathons</h1>
-        <p className="text-muted-foreground">
-          Discover and participate in exciting tech events worldwide.
-        </p>
-      </div>
-
-      {/* Search and Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search events..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border bg-background"
-          />
-        </div>
-        <div className="flex gap-4">
-          <select
-            value={selectedLocation}
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            className="px-4 py-2 rounded-lg border bg-background"
+    <PageContainer>
+      <PageHeader
+        title="Tech Events"
+        description="Join exciting hackathons, conferences, and workshops."
+        action={
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
           >
-            <option value="all">All Locations</option>
-            <option value="Virtual">Virtual</option>
-            <option value="New York, USA">New York, USA</option>
-            <option value="London, UK">London, UK</option>
-          </select>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-2 rounded-lg border bg-background"
-          >
-            <option value="all">All Months</option>
-            <option value="0">January</option>
-            <option value="1">February</option>
-            <option value="2">March</option>
-            {/* Add more months */}
-          </select>
-          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
             <Plus size={20} />
-            Host Event
+            Create Event
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Events Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredEvents.map((event) => (
-          <motion.article
-            key={event.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-lg border bg-card overflow-hidden"
-          >
-            <div className="relative h-48">
-              <img
-                src={event.image}
-                alt={event.title}
-                className="w-full h-full object-cover"
+      <SearchAndFilter
+        searchPlaceholder="Search events..."
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        filterValue={selectedType}
+        onFilterChange={setSelectedType}
+        filterOptions={filterOptions}
+        extraActions={
+          <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border hover:bg-accent">
+            <Calendar size={20} />
+            Calendar View
+          </button>
+        }
+      />
+
+      {/* Upcoming Events Section */}
+      {upcomingEvents.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold mb-6">Upcoming Events</h2>
+          <GridLayout columns={3}>
+            {upcomingEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                onEdit={() => setEditingEvent(event)}
+                onDelete={() => setDeletingEvent(event)}
               />
-              <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-primary text-primary-foreground">
-                {event.price}
-              </div>
-            </div>
+            ))}
+          </GridLayout>
+        </section>
+      )}
 
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-2">{event.title}</h2>
-              <p className="text-muted-foreground text-sm mb-4">
-                {event.description}
-              </p>
+      {/* Past Events Section */}
+      {pastEvents.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-semibold mb-6">Past Events</h2>
+          <GridLayout columns={3}>
+            {pastEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                onEdit={() => setEditingEvent(event)}
+                onDelete={() => setDeletingEvent(event)}
+              />
+            ))}
+          </GridLayout>
+        </section>
+      )}
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  {event.date}
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-primary" />
-                  {event.time}
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  {event.location}
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Users className="w-4 h-4 text-primary" />
-                  {event.attendees} attendees
-                </div>
-              </div>
+      {/* Forms and Dialogs */}
+      {(showAddForm || editingEvent) && (
+        <EventForm
+          initialData={editingEvent || undefined}
+          onSubmit={editingEvent ? handleEditEvent : handleAddEvent}
+          onCancel={() => {
+            setShowAddForm(false);
+            setEditingEvent(null);
+          }}
+          isEdit={!!editingEvent}
+        />
+      )}
 
-              <div className="flex flex-wrap gap-2 mb-4">
-                {event.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="flex items-center gap-2 text-sm text-primary">
-                  <Trophy className="w-4 h-4" />
-                  {event.rewards}
-                </div>
-                <div className="flex gap-2">
-                  <button className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-lg bg-primary/10 text-primary hover:bg-primary/20">
-                    <Download className="w-4 h-4" />
-                    Export
-                  </button>
-                  <button className="px-3 py-1 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
-                    Register
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.article>
-        ))}
-      </div>
-
-      {/* Host Event CTA */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="mt-12 p-8 rounded-lg bg-primary/5 text-center"
-      >
-        <h2 className="text-2xl font-semibold mb-4">
-          Want to Host Your Own Event?
-        </h2>
-        <p className="text-muted-foreground mb-6">
-          Create and manage your tech events, hackathons, or workshops on our
-          platform.
-        </p>
-        <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus size={20} />
-          Host an Event
-        </button>
-      </motion.div>
-    </div>
+      {deletingEvent && (
+        <ConfirmDialog
+          title="Delete Event"
+          message="Are you sure you want to delete this event? This action cannot be undone."
+          onConfirm={handleDeleteEvent}
+          onCancel={() => setDeletingEvent(null)}
+        />
+      )}
+    </PageContainer>
   );
 } 

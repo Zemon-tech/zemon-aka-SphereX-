@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
@@ -44,6 +44,13 @@ export default function Navbar() {
                 )}
               </Link>
             ))}
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <LogIn size={18} />
+              <span>Login</span>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -76,6 +83,14 @@ export default function Navbar() {
                   {item.name}
                 </Link>
               ))}
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <LogIn size={18} />
+                <span>Login</span>
+              </Link>
             </div>
           </motion.div>
         )}

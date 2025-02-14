@@ -2,21 +2,30 @@ import Redis from 'ioredis';
 import logger from './logger';
 import { config } from '../config/config';
 
-const redis = new Redis({
-  host: config.redis.host || 'localhost',
-  port: config.redis.port || 6379,
-  password: config.redis.password || undefined,
-});
+let redis: Redis | null = null;
 
-redis.on('error', (error: Error) => {
-  logger.error('Redis connection error:', error);
-});
+try {
+  redis = new Redis({
+    host: config.redis.host || 'localhost',
+    port: config.redis.port || 6379,
+    password: config.redis.password || undefined,
+  });
 
-redis.on('connect', () => {
-  logger.info('Redis connected successfully');
-});
+  redis.on('error', (error: Error) => {
+    logger.error('Redis connection error:', error);
+    redis = null;
+  });
+
+  redis.on('connect', () => {
+    logger.info('Redis connected successfully');
+  });
+} catch (error) {
+  logger.warn('Redis not available, running without cache');
+  redis = null;
+}
 
 export const setCache = async (key: string, data: any, expireTime = 3600) => {
+  if (!redis) return;
   try {
     await redis.setex(key, expireTime, JSON.stringify(data));
   } catch (error) {
@@ -25,6 +34,7 @@ export const setCache = async (key: string, data: any, expireTime = 3600) => {
 };
 
 export const getCache = async (key: string) => {
+  if (!redis) return null;
   try {
     const data = await redis.get(key);
     return data ? JSON.parse(data) : null;
@@ -35,6 +45,7 @@ export const getCache = async (key: string) => {
 };
 
 export const deleteCache = async (key: string) => {
+  if (!redis) return;
   try {
     await redis.del(key);
   } catch (error) {
@@ -43,6 +54,7 @@ export const deleteCache = async (key: string) => {
 };
 
 export const clearCache = async (pattern: string) => {
+  if (!redis) return;
   try {
     const keys = await redis.keys(pattern);
     if (keys.length > 0) {

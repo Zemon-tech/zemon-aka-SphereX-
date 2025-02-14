@@ -12,6 +12,7 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
+    "@octokit/rest": "^21.1.0",
     "@radix-ui/react-toast": "^1.2.6",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",

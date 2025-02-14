@@ -12,6 +12,7 @@ const navItems = [
   { name: "Repos", path: "/repos" },
   { name: "Store", path: "/store" },
   { name: "Events", path: "/events" },
+  { name: "Community", path: "/community" },
 ];
 
 export default function Navbar() {

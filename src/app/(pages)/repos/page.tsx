@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, GitBranch, Star, ArrowUpDown } from "lucide-react";
+import { useRouter } from "next/navigation";
 import PageContainer from "@/components/layout/PageContainer";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchAndFilter from "@/components/layout/SearchAndFilter";
@@ -27,6 +28,7 @@ interface Repository {
 }
 
 export default function ReposPage() {
+  const router = useRouter();
   const [showAddForm, setShowAddForm] = useState(false);
   const [repos, setRepos] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,6 +104,14 @@ export default function ReposPage() {
     }
   };
 
+  const handleCardClick = (repoId: string) => {
+    router.push(`/repos/${repoId}`);
+  };
+
+  const handleGitHubClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
+    e.stopPropagation(); // Prevent card click when clicking GitHub link
+  };
+
   return (
     <PageContainer className="py-6">
       <PageHeader
@@ -168,10 +178,14 @@ export default function ReposPage() {
           ))
         ) : repos.length > 0 ? (
           repos.map((repo) => (
-            <div key={repo._id} className="p-6 rounded-lg border bg-card hover:shadow-lg transition-shadow">
+            <div 
+              key={repo._id} 
+              className="p-6 rounded-lg border bg-card hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleCardClick(repo._id)}
+            >
               <div className="flex items-center gap-3 mb-4">
                 <img
-                  src={repo.thumbnail_url || '/placeholder-repo.jpg'}
+                  src="/Z.jpg"
                   alt={repo.name}
                   className="h-10 w-10 rounded"
                 />
@@ -182,6 +196,7 @@ export default function ReposPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-muted-foreground hover:text-primary"
+                    onClick={(e) => handleGitHubClick(e, repo.github_url)}
                   >
                     View on GitHub
                   </a>

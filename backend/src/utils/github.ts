@@ -1,12 +1,24 @@
-import { Octokit } from '@octokit/rest';
 import { config } from '../config/config';
 import logger from '../utils/logger';
 import { AppError } from '../utils/errors';
 
-// Initialize Octokit without token for public access
-const octokit = new Octokit(config.github.accessToken ? {
-  auth: config.github.accessToken,
-} : {});
+interface GitHubApiRepo {
+  name: string;
+  description: string | null;
+  html_url: string;
+  stargazers_count: number;
+  forks_count: number;
+  owner: {
+    login: string;
+  } | null;
+  private: boolean;
+}
+
+interface GitHubApiContributor {
+  login: string;
+  avatar_url: string;
+  contributions: number;
+}
 
 export interface GitHubRepoData {
   name: string;
@@ -26,34 +38,42 @@ export interface GitHubRepoData {
 
 export async function fetchGitHubRepo(owner: string, repo: string): Promise<GitHubRepoData> {
   try {
-    // Fetch basic repo data
-    const { data: repoData } = await octokit.repos.get({
-      owner,
-      repo,
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: config.github.accessToken ? {
+        'Authorization': `Bearer ${config.github.accessToken}`
+      } : {}
     });
 
-    if (repoData.private && !config.github.accessToken) {
-      throw new AppError('GitHub access token required for private repositories', 401);
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new AppError('Repository not found on GitHub', 404);
+      }
+      if (response.status === 401) {
+        throw new AppError('Invalid GitHub access token', 401);
+      }
+      if (response.status === 403) {
+        throw new AppError('GitHub API rate limit exceeded. Try again later.', 403);
+      }
+      throw new AppError('Failed to fetch repository data from GitHub', response.status);
     }
 
+    const repoData = await response.json() as GitHubApiRepo;
+
     // Fetch contributors
-    const { data: contributors } = await octokit.repos.listContributors({
-      owner,
-      repo,
-      per_page: 10,
-    }).catch(() => ({ data: [] })); // Default to empty array if fetching contributors fails
+    const contributorsResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contributors?per_page=10`, {
+      headers: config.github.accessToken ? {
+        'Authorization': `Bearer ${config.github.accessToken}`
+      } : {}
+    });
+    const contributors = (contributorsResponse.ok ? await contributorsResponse.json() : []) as GitHubApiContributor[];
 
-    // Fetch branches count
-    const { data: branches } = await octokit.repos.listBranches({
-      owner,
-      repo,
-      per_page: 1,
-    }).catch(() => ({ data: [] })); // Default to empty array if fetching branches fails
-
-    const branchCount = Number(branches[0]?.name ? 
-      (await octokit.repos.listBranches({ owner, repo })).data.length : 
-      0
-    );
+    // Fetch branches
+    const branchesResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches`, {
+      headers: config.github.accessToken ? {
+        'Authorization': `Bearer ${config.github.accessToken}`
+      } : {}
+    });
+    const branches = (branchesResponse.ok ? await branchesResponse.json() : []) as unknown[];
 
     // Filter out contributors with missing data and provide defaults
     const validContributors = contributors
@@ -70,7 +90,7 @@ export async function fetchGitHubRepo(owner: string, repo: string): Promise<GitH
       github_url: repoData.html_url,
       stars: repoData.stargazers_count || 0,
       forks: repoData.forks_count || 0,
-      branches: branchCount,
+      branches: branches.length || 0,
       contributors: validContributors,
       readme_url: `https://raw.githubusercontent.com/${owner}/${repo}/main/README.md`,
       owner: repoData.owner?.login || owner,
@@ -78,23 +98,15 @@ export async function fetchGitHubRepo(owner: string, repo: string): Promise<GitH
   } catch (error: any) {
     logger.error('Error fetching GitHub repo data:', error);
     
-    if (error.status === 404) {
-      throw new AppError('Repository not found on GitHub', 404);
+    if (error instanceof AppError) {
+      throw error;
     }
     
-    if (error.status === 401 && error.message !== 'GitHub access token required for private repositories') {
-      throw new AppError('Invalid GitHub access token', 401);
-    }
-    
-    if (error.status === 403) {
-      throw new AppError('GitHub API rate limit exceeded. Try again later.', 403);
-    }
-    
-    throw new AppError(error.message || 'Failed to fetch repository data from GitHub', error.status || 500);
+    throw new AppError(error.message || 'Failed to fetch repository data from GitHub', 500);
   }
 }
 
-export async function validateGitHubUrl(url: string): Promise<{ owner: string; repo: string } | null> {
+export function validateGitHubUrl(url: string): { owner: string; repo: string } | null {
   const githubUrlPattern = /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)/;
   const match = url.match(githubUrlPattern);
 

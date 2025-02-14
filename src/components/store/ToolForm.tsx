@@ -100,12 +100,12 @@ export default function ToolForm({ initialData, onSubmit, onCancel, isEdit = fal
                 <option value="">Select Category</option>
                 <option value="Developer Tools">Developer Tools</option>
                 <option value="Productivity">Productivity</option>
-                <option value="Design">Design Tools</option>
-                <option value="Testing">Testing Tools</option>
+                <option value="Design">Design</option>
+                <option value="Testing">Testing</option>
                 <option value="Analytics">Analytics</option>
                 <option value="DevOps">DevOps</option>
                 <option value="Security">Security</option>
-                <option value="Database">Database Tools</option>
+                <option value="Database">Database</option>
               </select>
             </div>
 

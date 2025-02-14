@@ -3,10 +3,11 @@
 import { motion } from "framer-motion";
 import { Star, Edit2, Trash2, Globe, Github } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface StoreCardProps {
   tool: {
-    id: number;
+    id: string;
     title: string;
     description: string;
     image: string;
@@ -22,18 +23,33 @@ interface StoreCardProps {
 }
 
 export default function StoreCard({ tool, onEdit, onDelete }: StoreCardProps) {
+  const router = useRouter();
+
+  const handleCardClick = () => {
+    router.push(`/store/${tool.id}`);
+  };
+
+  const handleLinkClick = (e: React.MouseEvent, url: string) => {
+    e.stopPropagation(); // Prevent card click when clicking links
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative rounded-lg border bg-card overflow-hidden hover:shadow-lg transition-shadow"
+      className="group relative rounded-lg border bg-card overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+      onClick={handleCardClick}
     >
       {/* Admin Actions */}
       {(onEdit || onDelete) && (
         <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
           {onEdit && (
             <button
-              onClick={onEdit}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
               className="p-2 rounded-full bg-background/80 hover:bg-background border shadow-sm"
               title="Edit"
             >
@@ -42,7 +58,10 @@ export default function StoreCard({ tool, onEdit, onDelete }: StoreCardProps) {
           )}
           {onDelete && (
             <button
-              onClick={onDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
               className="p-2 rounded-full bg-background/80 hover:bg-background border shadow-sm text-destructive"
               title="Delete"
             >
@@ -75,7 +94,7 @@ export default function StoreCard({ tool, onEdit, onDelete }: StoreCardProps) {
           </div>
         </div>
         
-        <Link href={`/store/${tool.id}`} className="block mb-4">
+        <div className="block mb-4">
           <h2 className="text-xl font-semibold group-hover:text-primary transition-colors">
             {tool.title}
           </h2>
@@ -83,7 +102,7 @@ export default function StoreCard({ tool, onEdit, onDelete }: StoreCardProps) {
           <p className="text-muted-foreground text-sm mt-2 line-clamp-2">
             {tool.description}
           </p>
-        </Link>
+        </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
           {tool.tags.map((tag) => (
@@ -98,7 +117,7 @@ export default function StoreCard({ tool, onEdit, onDelete }: StoreCardProps) {
 
         <div className="flex gap-2">
           <button
-            onClick={() => window.open(tool.url, '_blank', 'noopener,noreferrer')}
+            onClick={(e) => handleLinkClick(e, tool.url)}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
           >
             <Globe size={14} />
@@ -106,7 +125,7 @@ export default function StoreCard({ tool, onEdit, onDelete }: StoreCardProps) {
           </button>
           {tool.github && (
             <button
-              onClick={() => window.open(tool.github, '_blank', 'noopener,noreferrer')}
+              onClick={(e) => handleLinkClick(e, tool.github!)}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
             >
               <Github size={14} />

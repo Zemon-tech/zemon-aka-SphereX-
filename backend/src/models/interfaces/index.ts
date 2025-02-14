@@ -14,6 +14,31 @@ export interface IUser extends Document {
   updatedAt: Date;
 }
 
+export interface IStoreItem extends Document {
+  name: string;
+  description: string;
+  thumbnail: string;
+  url: string;
+  dev_docs?: string;
+  github_url?: string;
+  category: 'Developer Tools' | 'Productivity' | 'Design' | 'Testing' | 'Analytics' | 'DevOps' | 'Security' | 'Database';
+  tags: string[];
+  price: string;
+  author: IUser['_id'];
+  reviews: Array<{
+    user: IUser['_id'];
+    rating: number;
+    comment: string;
+    createdAt: Date;
+  }>;
+  average_rating: number;
+  total_reviews: number;
+  views: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IProject extends Document {
   title: string;
   description: string;

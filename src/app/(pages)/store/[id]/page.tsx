@@ -43,7 +43,7 @@ export default function StoreItemDetailPage() {
   useEffect(() => {
     const fetchStoreItem = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/store/${params.id}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store/${params.id}`);
         const data = await response.json();
         if (data.success) {
           setItem(data.data);

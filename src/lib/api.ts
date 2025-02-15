@@ -1,8 +1,17 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export const api = {
+  baseUrl: API_BASE_URL,
+  endpoints: {
+    repos: '/api/repos',
+    news: '/api/news',
+    store: '/api/store',
+    events: '/api/events',
+    auth: '/api/auth',
+  },
+
   async login(email: string, password: string) {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -18,7 +27,7 @@ export const api = {
   },
 
   async register(name: string, email: string, password: string) {
-    const res = await fetch(`${API_URL}/api/auth/register`, {
+    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -34,7 +43,7 @@ export const api = {
   },
 
   async githubAuth(code: string) {
-    const res = await fetch(`${API_URL}/api/auth/github`, {
+    const res = await fetch(`${API_BASE_URL}/api/auth/github`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

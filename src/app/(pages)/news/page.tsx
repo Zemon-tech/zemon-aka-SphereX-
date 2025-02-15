@@ -46,7 +46,7 @@ export default function NewsPage() {
 
   const fetchNews = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/news');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news`);
       const data = await response.json();
       if (data.success) {
         setNews(data.data.news);
@@ -78,7 +78,7 @@ export default function NewsPage() {
         tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim()),
       };
 
-      const response = await fetch('http://localhost:5000/api/news', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

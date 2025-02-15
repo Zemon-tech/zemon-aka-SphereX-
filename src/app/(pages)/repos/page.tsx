@@ -46,7 +46,7 @@ export default function ReposPage() {
 
   const fetchRepos = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/repos');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/repos`);
       const data = await response.json();
       if (data.success) {
         setRepos(data.data.repos);
@@ -70,7 +70,7 @@ export default function ReposPage() {
   const handleSubmitProject = async (formData: FormData) => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5000/api/repos', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/repos`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -32,7 +32,7 @@ export default function NewsDetailPage() {
   useEffect(() => {
     const fetchNewsDetail = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/news/${params.id}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news/${params.id}`);
         const data = await response.json();
         if (data.success) {
           setNews(data.data);

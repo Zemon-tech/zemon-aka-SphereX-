@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calendar, Edit2, Trash2, Eye } from "lucide-react";
-import Link from "next/link";
+import { Calendar, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface NewsCardProps {
   news: {
@@ -12,83 +12,62 @@ interface NewsCardProps {
     date: string;
     image: string;
     excerpt: string;
-    views?: number;
+    views: number;
   };
-  onEdit?: () => void;
-  onDelete?: () => void;
 }
 
-export default function NewsCard({ news, onEdit, onDelete }: NewsCardProps) {
+export default function NewsCard({ news }: NewsCardProps) {
   return (
-    <motion.article
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative rounded-lg border bg-card overflow-hidden hover:shadow-lg transition-shadow"
+      className="group h-[28rem] cursor-pointer rounded-xl border bg-card overflow-hidden hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300"
     >
-      {/* Admin Actions */}
-      {(onEdit || onDelete) && (
-        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          {onEdit && (
-            <button
-              onClick={onEdit}
-              className="p-2 rounded-full bg-background/80 hover:bg-background border shadow-sm"
-              title="Edit"
-            >
-              <Edit2 size={16} />
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={onDelete}
-              className="p-2 rounded-full bg-background/80 hover:bg-background border shadow-sm text-destructive"
-              title="Delete"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
+      {/* Image Container */}
+      <div className="relative w-full h-[15rem] overflow-hidden">
+        <img
+          src={news.image}
+          alt={news.title}
+          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        <div className="absolute top-4 left-4">
+          <Badge 
+            variant="secondary" 
+            className="backdrop-blur-md bg-white/90 text-foreground font-medium px-3 py-1"
+          >
+            {news.category}
+          </Badge>
         </div>
-      )}
+      </div>
 
-      <Link href={`/news/${news.id}`}>
-        <div className="relative">
-          <img
-            src={news.image}
-            alt={news.title}
-            className="w-full h-48 object-cover transition-transform group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
-        </div>
-        
-        <div className="p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
-              {news.category}
-            </span>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Calendar size={14} />
-              <span className="text-xs">{news.date}</span>
-            </div>
-            {news.views && (
-              <div className="flex items-center gap-1 text-muted-foreground ml-auto">
-                <Eye size={14} />
-                <span className="text-xs">{news.views}</span>
-              </div>
-            )}
+      {/* Content Container */}
+      <div className="p-6 h-[13rem] flex flex-col">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground/80 mb-3">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4" />
+            {news.date}
           </div>
-          
-          <h2 className="text-xl font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-            {news.title}
-          </h2>
-          
-          <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
-            {news.excerpt}
-          </p>
-          
-          <span className="text-primary text-sm font-medium hover:underline">
+          <div className="flex items-center gap-1.5">
+            <Eye className="w-4 h-4" />
+            {news.views} views
+          </div>
+        </div>
+
+        <h3 className="text-xl font-semibold mb-2.5 line-clamp-2 group-hover:text-primary transition-colors duration-300">
+          {news.title}
+        </h3>
+
+        <p className="text-muted-foreground/90 text-sm line-clamp-2 mb-4 leading-relaxed">
+          {news.excerpt}
+        </p>
+
+        <div className="mt-auto">
+          <span className="inline-flex items-center text-sm font-medium text-primary group-hover:underline">
             Read more
           </span>
         </div>
-      </Link>
-    </motion.article>
+      </div>
+    </motion.div>
   );
 } 

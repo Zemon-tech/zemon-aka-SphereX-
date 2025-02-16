@@ -202,3 +202,119 @@ Implemented a comprehensive Repository API with GitHub integration, MongoDB stor
 2. Implement sorting and filtering
 3. Add image upload support
 4. Add user favorites/bookmarks
+
+# Backend Documentation
+
+## Events API
+
+### Models
+
+#### Event Model
+- `title` (String, required): Event title
+- `description` (String, required): Event description
+- `date` (Date, required): Event date
+- `time` (String, required): Event time
+- `location` (String, required): Event location
+- `mode` (String, enum: ['online', 'in-person', 'hybrid']): Event mode
+- `type` (String, enum: ['hackathon', 'workshop', 'conference', 'meetup', 'webinar']): Event type
+- `capacity` (Number, optional): Maximum number of attendees
+- `registrationUrl` (String, optional): External registration URL
+- `rewards` (String, optional): Event rewards/prizes
+- `image` (String, required): Event image URL
+- `tags` (Array of Strings): Event tags for filtering
+- `organizer` (ObjectId, ref: 'User'): Event organizer
+- `attendees` (Array of ObjectIds, ref: 'User'): Registered attendees
+- `clicks` (Number): Number of event page views
+- `registrations` (Number): Number of registrations
+- `analytics`: Event analytics data
+  - `dailyViews`: Array of { date: Date, count: Number }
+  - `registrationDates`: Array of { date: Date, count: Number }
+
+### Endpoints
+
+#### GET /api/events
+Get all events with filtering and pagination
+- Query Parameters:
+  - `page` (Number): Page number
+  - `limit` (Number): Items per page
+  - `city` (String): Filter by city
+  - `type` (String): Filter by event type
+  - `rewards` (String): Filter by rewards
+  - `startDate` (Date): Filter events after this date
+  - `endDate` (Date): Filter events before this date
+- Response: List of events with pagination info
+- Uses Redis caching for optimized performance
+
+#### GET /api/events/:id
+Get single event details
+- Parameters:
+  - `id`: Event ID
+- Response: Detailed event information
+- Updates view count and analytics
+- Uses Redis caching
+
+#### POST /api/events
+Create a new event
+- Authentication required
+- Body: Event details
+- Response: Created event object
+
+#### PUT /api/events/:id
+Update an existing event
+- Authentication required
+- Parameters:
+  - `id`: Event ID
+- Body: Updated event details
+- Response: Updated event object
+
+#### DELETE /api/events/:id
+Delete an event
+- Authentication required
+- Parameters:
+  - `id`: Event ID
+- Response: Success message
+
+#### POST /api/events/:id/register
+Register for an event
+- Authentication required
+- Parameters:
+  - `id`: Event ID
+- Response: Registration confirmation
+- Updates registration count and analytics
+
+#### GET /api/events/export/excel
+Export events data to Excel
+- Authentication required
+- Response: Excel file with event data
+- Includes:
+  - Event details
+  - Registration statistics
+  - Analytics data
+
+### Caching Strategy
+
+- Redis is used for caching frequently accessed data
+- Cache keys:
+  - List cache: `events:{page}:{limit}:{filters}`
+  - Detail cache: `events:{id}`
+- Cache expiration: 1 hour
+- Cache is cleared on updates/deletes
+
+### Analytics Tracking
+
+- Tracks:
+  - Page views (clicks)
+  - Registrations
+  - Daily view counts
+  - Registration dates
+- Data can be exported to Excel for analysis
+
+### Best Practices
+
+- Input validation using TypeScript interfaces
+- Error handling with custom AppError class
+- Redis caching for performance optimization
+- MongoDB indexes for faster queries
+- Authentication middleware for protected routes
+- Rate limiting for API endpoints
+- CORS configuration for security

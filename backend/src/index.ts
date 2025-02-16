@@ -9,11 +9,17 @@ import errorHandler from './middleware/error.middleware';
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 
 // Routes
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!' });
+});
 app.use('/api', routes);
 
 // Error handling

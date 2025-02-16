@@ -59,12 +59,27 @@ export interface IEvent extends Document {
   date: Date;
   time: string;
   location: string;
-  attendees: IUser['_id'][];
-  price: number;
+  mode: 'online' | 'in-person' | 'hybrid';
+  type: 'hackathon' | 'workshop' | 'conference' | 'meetup' | 'webinar';
+  capacity?: number;
+  registrationUrl?: string;
   rewards?: string;
   image: string;
   tags: string[];
   organizer: IUser['_id'];
+  attendees: IUser['_id'][];
+  clicks: number;
+  registrations: number;
+  analytics: {
+    dailyViews: Array<{
+      date: Date;
+      count: number;
+    }>;
+    registrationDates: Array<{
+      date: Date;
+      count: number;
+    }>;
+  };
   createdAt: Date;
   updatedAt: Date;
 }

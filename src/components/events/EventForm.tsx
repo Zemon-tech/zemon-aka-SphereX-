@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { X, Loader2, Calendar, MapPin, Clock, Users, Image as ImageIcon, Trophy } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EventFormProps {
   initialData?: {
@@ -74,12 +84,11 @@ export default function EventForm({ initialData, onSubmit, onCancel, isEdit = fa
                     Event Title
                   </span>
                 </label>
-                <input
-                  type="text"
+                <Input
+                  id="title"
                   name="title"
                   defaultValue={initialData?.title}
                   required
-                  className="w-full px-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="Enter event title"
                 />
               </div>
@@ -91,12 +100,12 @@ export default function EventForm({ initialData, onSubmit, onCancel, isEdit = fa
                     Event Description
                   </span>
                 </label>
-                <textarea
+                <Textarea
+                  id="description"
                   name="description"
                   defaultValue={initialData?.description}
                   required
                   rows={4}
-                  className="w-full px-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="Describe your event"
                 />
               </div>
@@ -110,12 +119,12 @@ export default function EventForm({ initialData, onSubmit, onCancel, isEdit = fa
                     Event Date
                   </span>
                 </label>
-                <input
-                  type="date"
+                <Input
+                  id="date"
                   name="date"
+                  type="date"
                   defaultValue={initialData?.date}
                   required
-                  className="w-full px-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
 
@@ -126,12 +135,12 @@ export default function EventForm({ initialData, onSubmit, onCancel, isEdit = fa
                     Event Time
                   </span>
                 </label>
-                <input
-                  type="time"
+                <Input
+                  id="time"
                   name="time"
+                  type="time"
                   defaultValue={initialData?.time}
                   required
-                  className="w-full px-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
             </div>
@@ -139,19 +148,22 @@ export default function EventForm({ initialData, onSubmit, onCancel, isEdit = fa
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Event Type</label>
-                <select
+                <Select
                   name="type"
                   defaultValue={initialData?.type}
                   required
-                  className="w-full px-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                 >
-                  <option value="">Select Event Type</option>
-                  <option value="hackathon">Hackathon</option>
-                  <option value="workshop">Workshop</option>
-                  <option value="conference">Conference</option>
-                  <option value="meetup">Meetup</option>
-                  <option value="webinar">Webinar</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Event Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hackathon">Hackathon</SelectItem>
+                    <SelectItem value="workshop">Workshop</SelectItem>
+                    <SelectItem value="conference">Conference</SelectItem>
+                    <SelectItem value="meetup">Meetup</SelectItem>
+                    <SelectItem value="webinar">Webinar</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -187,12 +199,11 @@ export default function EventForm({ initialData, onSubmit, onCancel, isEdit = fa
                     {mode === "online" ? "Event Link" : "Location"}
                   </span>
                 </label>
-                <input
-                  type={mode === "online" ? "url" : "text"}
+                <Input
+                  id="location"
                   name="location"
                   defaultValue={initialData?.location}
                   required
-                  className="w-full px-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder={
                     mode === "online"
                       ? "Enter meeting link"
@@ -208,13 +219,60 @@ export default function EventForm({ initialData, onSubmit, onCancel, isEdit = fa
                     Capacity (Optional)
                   </span>
                 </label>
-                <input
-                  type="number"
+                <Input
+                  id="capacity"
                   name="capacity"
+                  type="number"
                   defaultValue={initialData?.capacity}
                   min="1"
-                  className="w-full px-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="Maximum number of participants"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  <span className="flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                    Image URL
+                  </span>
+                </label>
+                <Input
+                  id="image"
+                  name="image"
+                  type="url"
+                  defaultValue={initialData?.image}
+                  placeholder="Enter event image URL"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  <span className="flex items-center gap-2">
+                    Rewards
+                  </span>
+                </label>
+                <Input
+                  id="rewards"
+                  name="rewards"
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  <span className="flex items-center gap-2">
+                    Tags
+                  </span>
+                </label>
+                <Input
+                  id="tags"
+                  name="tags"
+                  defaultValue={initialData?.tags.join(", ")}
+                  placeholder="Enter tags separated by commas"
                 />
               </div>
             </div>

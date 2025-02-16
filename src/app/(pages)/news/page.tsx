@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import NewsForm from "@/components/news/NewsForm";
 import NewsCard from "@/components/news/NewsCard";
 import { useToast } from "@/components/ui/use-toast";
+import { API_BASE_URL } from "@/lib/api";
 
 interface NewsArticle {
   _id: string;
@@ -46,7 +47,9 @@ export default function NewsPage() {
 
   const fetchNews = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news`);
+      console.log('API_BASE_URL:', API_BASE_URL);
+      console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+      const response = await fetch(`${API_BASE_URL}/api/news`);
       const data = await response.json();
       if (data.success) {
         setNews(data.data.news);
@@ -78,7 +81,7 @@ export default function NewsPage() {
         tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim()),
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news`, {
+      const response = await fetch(`${API_BASE_URL}/api/news`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -6,7 +6,7 @@ import Link from "next/link";
 
 interface EventCardProps {
   event: {
-    id: number;
+    id: string;
     title: string;
     description: string;
     date: string;

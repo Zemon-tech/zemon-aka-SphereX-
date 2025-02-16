@@ -1,33 +1,50 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Menu, X, LogIn } from "lucide-react";
-import { useState } from "react";
+import UserAvatar from "./UserAvatar";
 
-const navItems = [
-  { name: "Home", path: "/" },
-  { name: "News", path: "/news" },
-  { name: "Repos", path: "/repos" },
-  { name: "Store", path: "/store" },
-  { name: "Events", path: "/events" },
-  { name: "Community", path: "/community" },
-];
+interface User {
+  name: string;
+  email: string;
+  avatar?: string;
+}
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Check for user data in localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
+  const navItems = [
+    { name: "Events", path: "/events" },
+    { name: "News", path: "/news" },
+    { name: "Store", path: "/store" },
+    { name: "Projects", path: "/projects" },
+  ];
 
   return (
-    <nav className="fixed top-0 w-full bg-background/80 backdrop-blur-sm z-50 border-b">
+    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold">Zemon</span>
+        <div className="flex h-16 items-center justify-between">
+          <Link href="/" className="text-xl font-bold">
+            SphereX
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
               <Link
@@ -45,13 +62,17 @@ export default function Navbar() {
                 )}
               </Link>
             ))}
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              <LogIn size={18} />
-              <span>Login</span>
-            </Link>
+            {user ? (
+              <UserAvatar user={user} onLogout={handleLogout} />
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <LogIn size={18} />
+                <span>Login</span>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -84,14 +105,20 @@ export default function Navbar() {
                   {item.name}
                 </Link>
               ))}
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <LogIn size={18} />
-                <span>Login</span>
-              </Link>
+              {user ? (
+                <div className="px-4">
+                  <UserAvatar user={user} onLogout={handleLogout} />
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <LogIn size={18} />
+                  <span>Login</span>
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

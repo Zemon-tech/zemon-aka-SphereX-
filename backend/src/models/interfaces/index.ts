@@ -10,6 +10,7 @@ export interface IUser extends Document {
   twitter?: string;
   linkedin?: string;
   role: 'user' | 'admin';
+  comparePassword(candidatePassword: string): Promise<boolean>;
   createdAt: Date;
   updatedAt: Date;
 }

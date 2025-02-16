@@ -1,36 +1,62 @@
-import mongoose from 'mongoose';
+import { Schema, model } from 'mongoose';
+import bcrypt from 'bcryptjs';
 import { IUser } from './interfaces';
 
-const userSchema = new mongoose.Schema<IUser>(
-  {
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    name: {
-      type: String,
-      required: true,
-    },
-    avatar: String,
-    bio: String,
-    github: String,
-    twitter: String,
-    linkedin: String,
-    role: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
-    },
+const userSchema = new Schema<IUser>({
+  name: {
+    type: String,
+    required: [true, 'Name is required'],
+    trim: true
   },
-  {
-    timestamps: true,
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    trim: true,
+    lowercase: true,
+    match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters']
+  },
+  avatar: {
+    type: String,
+    default: '/default-avatar.jpg'
+  },
+  bio: String,
+  github: String,
+  twitter: String,
+  linkedin: String,
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
   }
-);
+}, {
+  timestamps: true
+});
 
-export const User = mongoose.model<IUser>('User', userSchema); 
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Create indexes
+userSchema.index({ email: 1 });
+
+export default model<IUser>('User', userSchema); 

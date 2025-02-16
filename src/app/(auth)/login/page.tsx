@@ -3,20 +3,62 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Mail, Lock, Github } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     name: "",
   });
+  const router = useRouter();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication logic
-    console.log("Form submitted:", formData);
+    setIsLoading(true);
+
+    try {
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Authentication failed');
+      }
+
+      // Store token and user data
+      localStorage.setItem('token', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+
+      toast({
+        title: "Success",
+        description: isLogin ? "Logged in successfully" : "Account created successfully",
+      });
+
+      router.push('/');
+    } catch (error) {
+      console.error('Auth error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Authentication failed",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -142,9 +184,20 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent rounded-lg text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent rounded-lg text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
             >
-              {isLogin ? "Sign in" : "Sign up"}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Processing...
+                </span>
+              ) : (
+                isLogin ? "Sign in" : "Sign up"
+              )}
             </button>
           </div>
         </form>

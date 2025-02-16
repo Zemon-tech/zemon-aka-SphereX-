@@ -17,32 +17,48 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Check for user data in localStorage
+    setIsClient(true);
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    const handleAuthChange = (event: CustomEvent) => {
+      setUser(event.detail);
+    };
+
+    window.addEventListener('auth-state-change', handleAuthChange as EventListener);
+    return () => {
+      window.removeEventListener('auth-state-change', handleAuthChange as EventListener);
+    };
   }, []);
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    const event = new CustomEvent('auth-state-change', { detail: null });
+    window.dispatchEvent(event);
   };
 
   const navItems = [
-    { name: "Events", path: "/events" },
+    { name: "Home", path: "/" },
     { name: "News", path: "/news" },
+    { name: "Repos", path: "/repos" },
     { name: "Store", path: "/store" },
-    { name: "Projects", path: "/projects" },
+    { name: "Events", path: "/events" },
+    { name: "Community", path: "/community" },
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="fixed top-0 w-full bg-background/80 backdrop-blur-sm z-50 border-b">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="text-xl font-bold">
-            SphereX
+        <div className="flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center space-x-2">
+            <span className="text-xl font-bold">Zemon</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">
@@ -54,7 +70,7 @@ export default function Navbar() {
                   ${pathname === item.path ? "text-primary" : "text-muted-foreground"}`}
               >
                 {item.name}
-                {pathname === item.path && (
+                {isClient && pathname === item.path && (
                   <motion.div
                     className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"
                     layoutId="navbar-underline"
@@ -62,7 +78,7 @@ export default function Navbar() {
                 )}
               </Link>
             ))}
-            {user ? (
+            {isClient && (user ? (
               <UserAvatar user={user} onLogout={handleLogout} />
             ) : (
               <Link
@@ -72,10 +88,9 @@ export default function Navbar() {
                 <LogIn size={18} />
                 <span>Login</span>
               </Link>
-            )}
+            ))}
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             className="md:hidden"
             onClick={() => setIsOpen(!isOpen)}
@@ -85,8 +100,7 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
-        {isOpen && (
+        {isOpen && isClient && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -43,6 +43,10 @@ export default function LoginPage() {
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
 
+      // Dispatch auth state change event
+      const event = new CustomEvent('auth-state-change', { detail: data.data.user });
+      window.dispatchEvent(event);
+
       toast({
         title: "Success",
         description: isLogin ? "Logged in successfully" : "Account created successfully",

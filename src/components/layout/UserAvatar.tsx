@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, LogOut, User } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -51,15 +51,19 @@ export default function UserAvatar({ user, onLogout }: UserAvatarProps) {
   return (
     <div className="relative group">
       <div className="flex items-center gap-2 cursor-pointer">
-        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium overflow-hidden">
           {user.avatar ? (
             <img 
               src={user.avatar} 
-              alt={user.name} 
-              className="w-full h-full rounded-full object-cover"
+              alt={user.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.textContent = getInitials(user.name);
+              }}
             />
           ) : (
-            <span>{getInitials(user.name)}</span>
+            getInitials(user.name)
           )}
         </div>
         <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />

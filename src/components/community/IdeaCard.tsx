@@ -1,73 +1,92 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Heart, MessageSquare, Share2 } from "lucide-react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Trash2, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import axios from "axios";
 
 interface IdeaCardProps {
   idea: {
     id: string;
     title: string;
     description: string;
-    author: {
-      name: string;
-      avatar: string;
-    };
-    likes: number;
-    comments: number;
-    tags: string[];
+    author: string;
     createdAt: string;
   };
+  onDelete?: () => void;
 }
 
-export default function IdeaCard({ idea }: IdeaCardProps) {
+export default function IdeaCard({ idea, onDelete }: IdeaCardProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+
+  // Generate avatar URL using UI Avatars
+  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent('Community Member')}&background=random`;
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this idea? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await axios.delete(`http://localhost:5002/api/community/ideas/${idea.id}`);
+      toast({
+        title: "Success",
+        description: "Idea deleted successfully",
+      });
+      onDelete?.();
+    } catch (error) {
+      console.error('Error deleting idea:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete idea. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <Card className="group hover:border-primary/50 transition-colors">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h3 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">
-              {idea.title}
-            </h3>
-            <p className="text-muted-foreground text-sm line-clamp-2 mt-1">
-              {idea.description}
-            </p>
+    <Card className="h-full flex flex-col hover:border-primary/50 transition-colors">
+      <CardHeader className="flex-none">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={avatarUrl} alt="Community Member" />
+              <AvatarFallback>CM</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <p className="text-sm font-medium">Community Member</p>
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(idea.createdAt), { addSuffix: true })}
+              </p>
+            </div>
           </div>
-          <Avatar className="w-10 h-10">
-            <AvatarImage src={idea.author.avatar} alt={idea.author.name} />
-            <AvatarFallback>{idea.author.name[0]}</AvatarFallback>
-          </Avatar>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mt-4">
-          {idea.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      </CardContent>
-
-      <CardFooter className="px-6 py-4 border-t bg-muted/50">
-        <div className="flex items-center justify-between w-full text-muted-foreground">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <Heart className="w-4 h-4" />
-              {idea.likes}
-            </Button>
-            <Button variant="ghost" size="sm" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
-              {idea.comments}
-            </Button>
-          </div>
-          <Button variant="ghost" size="icon" className="ml-auto">
-            <Share2 className="w-4 h-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          >
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
           </Button>
         </div>
-      </CardFooter>
+      </CardHeader>
+      <CardContent className="flex-1">
+        <h3 className="font-semibold mb-2">{idea.title}</h3>
+        <p className="text-sm text-muted-foreground">{idea.description}</p>
+      </CardContent>
     </Card>
   );
 } 

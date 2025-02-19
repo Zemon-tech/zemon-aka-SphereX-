@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Search, Filter, Lightbulb, FileText, Video, Wrench } from "lucide-react";
+import { Plus, Search, Filter, Lightbulb, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,53 @@ import IdeaCard from "@/components/community/IdeaCard";
 import ResourceList from "@/components/community/ResourceList";
 import AddIdeaModal from "@/components/community/AddIdeaModal";
 import ShareResourceModal from "@/components/community/ShareResourceModal";
-import { Badge } from "@/components/ui/badge";
+import axios from "axios";
+import { useToast } from "@/components/ui/use-toast";
+
+interface Idea {
+  _id: string;
+  title: string;
+  description: string;
+  author: string;
+  createdAt: string;
+}
 
 export default function CommunityPage() {
   const [isAddIdeaOpen, setIsAddIdeaOpen] = useState(false);
   const [isShareResourceOpen, setIsShareResourceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const fetchIdeas = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await axios.get('http://localhost:5002/api/community/ideas');
+      setIdeas(response.data);
+    } catch (error: any) {
+      console.error('Error fetching ideas:', error);
+      setError('Failed to load ideas. Please try again later.');
+      toast({
+        title: "Error",
+        description: "Failed to load ideas. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchIdeas();
+  }, []);
+
+  const filteredIdeas = ideas.filter(idea =>
+    idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    idea.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <PageContainer>
@@ -53,7 +94,7 @@ export default function CommunityPage() {
               <div className="relative flex-1 md:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search..."
+                  placeholder="Search ideas..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -68,31 +109,35 @@ export default function CommunityPage() {
           <TabsContent value="ideas" className="space-y-6">
             {/* Ideas Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Sample ideas - replace with actual data */}
-              {Array.from({ length: 6 }).map((_, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <IdeaCard
-                    idea={{
-                      id: index.toString(),
-                      title: "Sample Idea Title",
-                      description: "This is a sample idea description that shows how the card will look with actual content.",
-                      author: {
-                        name: "John Doe",
-                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`,
-                      },
-                      likes: 42,
-                      comments: 12,
-                      tags: ["React", "TypeScript"],
-                      createdAt: new Date().toISOString(),
-                    }}
-                  />
-                </motion.div>
-              ))}
+              {isLoading ? (
+                <div className="col-span-full text-center py-8">Loading ideas...</div>
+              ) : error ? (
+                <div className="col-span-full text-center py-8 text-red-500">{error}</div>
+              ) : filteredIdeas.length > 0 ? (
+                filteredIdeas.map((idea, index) => (
+                  <motion.div
+                    key={idea._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <IdeaCard
+                      idea={{
+                        id: idea._id,
+                        title: idea.title,
+                        description: idea.description,
+                        author: idea.author,
+                        createdAt: idea.createdAt,
+                      }}
+                      onDelete={fetchIdeas}
+                    />
+                  </motion.div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-8">
+                  No ideas found. Be the first to share an idea!
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -104,33 +149,6 @@ export default function CommunityPage() {
                 Share Resource
               </Button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {[
-                { icon: FileText, label: "Documentation", count: 25 },
-                { icon: Video, label: "Video Tutorials", count: 15 },
-                { icon: Wrench, label: "Developer Tools", count: 30 },
-              ].map((category, index) => (
-                <motion.div
-                  key={category.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="p-4 border rounded-lg bg-card hover:border-primary/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-md bg-primary/10">
-                      <category.icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{category.label}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {category.count} resources
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
             <ResourceList />
           </TabsContent>
         </Tabs>
@@ -139,6 +157,7 @@ export default function CommunityPage() {
       <AddIdeaModal
         isOpen={isAddIdeaOpen}
         onClose={() => setIsAddIdeaOpen(false)}
+        onIdeaAdded={fetchIdeas}
       />
 
       <ShareResourceModal

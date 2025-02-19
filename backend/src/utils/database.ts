@@ -4,7 +4,13 @@ import logger from './logger';
 
 export const connectDB = async (): Promise<void> => {
   try {
-    const conn = await mongoose.connect(config.mongoUri);
+    mongoose.set('strictQuery', true);
+    
+    const conn = await mongoose.connect(config.mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
 
     mongoose.connection.on('error', (err) => {
@@ -13,6 +19,14 @@ export const connectDB = async (): Promise<void> => {
 
     mongoose.connection.on('disconnected', () => {
       logger.warn('MongoDB disconnected');
+    });
+
+    mongoose.connection.on('connected', () => {
+      logger.info('MongoDB connected');
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      logger.info('MongoDB reconnected');
     });
 
     process.on('SIGINT', async () => {
@@ -26,7 +40,10 @@ export const connectDB = async (): Promise<void> => {
       }
     });
   } catch (error) {
-    logger.error('Error connecting to MongoDB:', error);
+    logger.error('Error connecting to MongoDB:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     process.exit(1);
   }
 }; 

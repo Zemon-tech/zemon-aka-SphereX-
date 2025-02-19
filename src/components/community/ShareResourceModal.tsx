@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Loader2, Link2, FileUp } from "lucide-react";
+import { X, Loader2, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import axios from "axios";
 import {
   Select,
   SelectContent,
@@ -18,35 +19,62 @@ import {
 interface ShareResourceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onResourceAdded?: () => void;
 }
 
-export default function ShareResourceModal({ isOpen, onClose }: ShareResourceModalProps) {
+export default function ShareResourceModal({ isOpen, onClose, onResourceAdded }: ShareResourceModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    type: "",
+    resourceType: "",
     url: "",
-    category: "",
   });
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.resourceType) {
+      toast({
+        title: "Error",
+        description: "Please select a resource type",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Add API call here
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      toast({
-        title: "Success",
-        description: "Resource has been shared successfully!",
+      const response = await axios.post('http://localhost:5002/api/community/resources', {
+        title: formData.title,
+        description: formData.description,
+        resourceType: formData.resourceType,
+        url: formData.url.startsWith('http') ? formData.url : `https://${formData.url}`
       });
-      onClose();
-    } catch (error) {
+
+      if (response.status === 201) {
+        toast({
+          title: "Success",
+          description: "Resource has been shared successfully!",
+        });
+        // Reset form
+        setFormData({
+          title: "",
+          description: "",
+          resourceType: "",
+          url: "",
+        });
+        // Notify parent component to refresh resources list
+        onResourceAdded?.();
+        onClose();
+      }
+    } catch (error: any) {
+      console.error('Error sharing resource:', error);
       toast({
         title: "Error",
-        description: "Failed to share resource. Please try again.",
+        description: error.response?.data?.message || "Failed to share resource. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -88,6 +116,7 @@ export default function ShareResourceModal({ isOpen, onClose }: ShareResourceMod
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Enter resource title"
                 required
+                maxLength={100}
               />
             </div>
 
@@ -99,43 +128,26 @@ export default function ShareResourceModal({ isOpen, onClose }: ShareResourceMod
                 placeholder="Describe the resource"
                 className="min-h-[100px]"
                 required
+                maxLength={1000}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Type</label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => setFormData({ ...formData, type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pdf">PDF Document</SelectItem>
-                    <SelectItem value="video">Video Tutorial</SelectItem>
-                    <SelectItem value="tool">Developer Tool</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Category</label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Documentation">Documentation</SelectItem>
-                    <SelectItem value="Tutorial">Tutorial</SelectItem>
-                    <SelectItem value="Tools">Tools</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Type</label>
+              <Select
+                value={formData.resourceType}
+                onValueChange={(value) => setFormData({ ...formData, resourceType: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PDF">PDF Document</SelectItem>
+                  <SelectItem value="VIDEO">Video Tutorial</SelectItem>
+                  <SelectItem value="TOOL">Developer Tool</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -151,10 +163,6 @@ export default function ShareResourceModal({ isOpen, onClose }: ShareResourceMod
                     required
                   />
                 </div>
-                <Button type="button" variant="outline" className="gap-2">
-                  <FileUp className="w-4 h-4" />
-                  Upload
-                </Button>
               </div>
             </div>
 

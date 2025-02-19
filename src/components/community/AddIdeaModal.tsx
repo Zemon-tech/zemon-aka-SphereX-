@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import axios from "axios";
 
 interface AddIdeaModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onIdeaAdded?: () => void;
 }
 
-export default function AddIdeaModal({ isOpen, onClose }: AddIdeaModalProps) {
+export default function AddIdeaModal({ isOpen, onClose, onIdeaAdded }: AddIdeaModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -27,14 +29,28 @@ export default function AddIdeaModal({ isOpen, onClose }: AddIdeaModalProps) {
     setIsSubmitting(true);
 
     try {
-      // Add API call here
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      toast({
-        title: "Success",
-        description: "Your idea has been shared successfully!",
+      const response = await axios.post('http://localhost:5002/api/community/ideas', {
+        title: formData.title,
+        description: formData.description
       });
-      onClose();
+
+      if (response.status === 201) {
+        toast({
+          title: "Success",
+          description: "Your idea has been shared successfully!",
+        });
+        // Reset form
+        setFormData({
+          title: "",
+          description: "",
+          tags: "",
+        });
+        // Notify parent component to refresh ideas list
+        onIdeaAdded?.();
+        onClose();
+      }
     } catch (error) {
+      console.error('Error sharing idea:', error);
       toast({
         title: "Error",
         description: "Failed to share your idea. Please try again.",

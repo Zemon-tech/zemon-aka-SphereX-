@@ -14,7 +14,10 @@ interface IdeaCardProps {
     id: string;
     title: string;
     description: string;
-    author: string;
+    author: {
+      _id: string;
+      name: string;
+    };
     createdAt: string;
   };
   onDelete?: () => void;
@@ -25,7 +28,8 @@ export default function IdeaCard({ idea, onDelete }: IdeaCardProps) {
   const { toast } = useToast();
 
   // Generate avatar URL using UI Avatars
-  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent('Community Member')}&background=random`;
+  const authorName = idea.author?.name || 'Anonymous';
+  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=random`;
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this idea? This action cannot be undone.')) {
@@ -58,11 +62,11 @@ export default function IdeaCard({ idea, onDelete }: IdeaCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={avatarUrl} alt="Community Member" />
-              <AvatarFallback>CM</AvatarFallback>
+              <AvatarImage src={avatarUrl} alt={idea.author.name} />
+              <AvatarFallback>{authorName.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
-              <p className="text-sm font-medium">Community Member</p>
+              <p className="text-sm font-medium">{authorName}</p>
               <p className="text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(idea.createdAt), { addSuffix: true })}
               </p>
@@ -89,4 +93,4 @@ export default function IdeaCard({ idea, onDelete }: IdeaCardProps) {
       </CardContent>
     </Card>
   );
-} 
+}

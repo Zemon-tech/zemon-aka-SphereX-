@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import Footer from "@/components/layout/Footer";
 
 export default function HomePage() {
   const features = [
@@ -314,7 +315,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section - Final gradient */}
-      <section className="py-20 bg-gradient-to-b from-primary/5 to-background relative overflow-hidden">
+      <section className="relative py-24 bg-gradient-to-b from-background to-muted">
         <div className="absolute inset-0 bg-grid-white/5" />
         <div className="container relative">
           <motion.div
@@ -338,6 +339,8 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }

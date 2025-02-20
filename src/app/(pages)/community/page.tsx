@@ -18,11 +18,15 @@ interface Idea {
   _id: string;
   title: string;
   description: string;
-  author: string;
+  author: {
+    _id: string;
+    name: string;
+  };
   createdAt: string;
 }
 
 export default function CommunityPage() {
+  const [activeTab, setActiveTab] = useState("ideas");
   const [isAddIdeaOpen, setIsAddIdeaOpen] = useState(false);
   const [isShareResourceOpen, setIsShareResourceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,14 +74,21 @@ export default function CommunityPage() {
               Share ideas, learn, and grow together with fellow developers
             </p>
           </div>
-          <Button onClick={() => setIsAddIdeaOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Share Idea
-          </Button>
+          {activeTab === "ideas" ? (
+            <Button onClick={() => setIsAddIdeaOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Share Idea
+            </Button>
+          ) : (
+            <Button onClick={() => setIsShareResourceOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Share Resource
+            </Button>
+          )}
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="ideas" className="space-y-6">
+        <Tabs defaultValue="ideas" className="space-y-6" onValueChange={setActiveTab}>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <TabsList>
               <TabsTrigger value="ideas" className="gap-2">
@@ -94,7 +105,7 @@ export default function CommunityPage() {
               <div className="relative flex-1 md:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search ideas..."
+                  placeholder={`Search ${activeTab}...`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -126,7 +137,10 @@ export default function CommunityPage() {
                         id: idea._id,
                         title: idea.title,
                         description: idea.description,
-                        author: idea.author,
+                        author: {
+                          _id: typeof idea.author === 'string' ? idea.author : idea.author._id,
+                          name: typeof idea.author === 'string' ? 'Anonymous' : idea.author.name
+                        },
                         createdAt: idea.createdAt,
                       }}
                       onDelete={fetchIdeas}
@@ -142,13 +156,6 @@ export default function CommunityPage() {
           </TabsContent>
 
           <TabsContent value="resources" className="space-y-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Community Resources</h2>
-              <Button onClick={() => setIsShareResourceOpen(true)} className="gap-2">
-                <Plus className="w-4 h-4" />
-                Share Resource
-              </Button>
-            </div>
             <ResourceList />
           </TabsContent>
         </Tabs>

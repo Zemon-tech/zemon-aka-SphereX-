@@ -32,6 +32,8 @@ export default function AddIdeaModal({ isOpen, onClose, onIdeaAdded }: AddIdeaMo
       const response = await axios.post('http://localhost:5002/api/community/ideas', {
         title: formData.title,
         description: formData.description
+      }, {
+        withCredentials: true // This ensures cookies are sent with the request
       });
 
       if (response.status === 201) {
@@ -49,11 +51,11 @@ export default function AddIdeaModal({ isOpen, onClose, onIdeaAdded }: AddIdeaMo
         onIdeaAdded?.();
         onClose();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sharing idea:', error);
       toast({
         title: "Error",
-        description: "Failed to share your idea. Please try again.",
+        description: error.response?.data?.message || "Failed to share your idea. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -150,4 +152,4 @@ export default function AddIdeaModal({ isOpen, onClose, onIdeaAdded }: AddIdeaMo
       </div>
     </motion.div>
   );
-} 
+}

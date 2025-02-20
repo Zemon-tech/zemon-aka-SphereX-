@@ -106,4 +106,34 @@
 
 .markdown-body p {
   @apply my-4;
+}
+
+/* Store Card Styles */
+.store-card-rating {
+  @apply inline-flex items-center;
+}
+
+.store-card-rating svg {
+  @apply transition-colors;
+}
+
+.store-card-get-button {
+  @apply bg-primary/10 text-primary hover:bg-primary/20 transition-colors;
+}
+
+.store-card-docs-button {
+  @apply text-xs text-primary/80 hover:text-primary transition-colors;
+}
+
+/* Add these to your existing styles */
+@layer utilities {
+  .glass-effect {
+    @apply bg-clip-padding backdrop-filter backdrop-blur-xl;
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .hover-glow {
+    @apply transition-[box-shadow,transform];
+    @apply hover:shadow-[0_0_30px_-10px] hover:shadow-primary/20;
+  }
 } 

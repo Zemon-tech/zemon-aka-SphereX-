@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Star, Globe, Github, Tag, Eye, MessageSquare } from "lucide-react";
+import { useParams } from "next/navigation";
+import { ArrowLeft, Star, Globe, Book, Code, MessageSquare, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import PageContainer from "@/components/layout/PageContainer";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface StoreItem {
+interface ToolDetails {
   _id: string;
   name: string;
   description: string;
@@ -18,26 +22,30 @@ interface StoreItem {
   category: string;
   tags: string[];
   price: string;
-  author_name: string;
-  reviews: Array<{
-    user_name: string;
-    rating: number;
-    comment: string;
-    createdAt: string;
-  }>;
   average_rating: number;
   total_reviews: number;
-  views: number;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
+  developer_name: string;
+  developer_avatar?: string;
+  developer_company?: string;
+  version?: string;
+  lastUpdated?: string;
+  screenshots?: string[];
+  reviews?: Array<{
+    user: {
+      name: string;
+      avatar: string;
+    };
+    rating: number;
+    comment: string;
+    date: string;
+  }>;
 }
 
-export default function StoreItemDetailPage() {
+export default function ToolDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const { toast } = useToast();
-  const [item, setItem] = useState<StoreItem | null>(null);
+  const [tool, setTool] = useState<ToolDetails | null>(null);
+  const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -46,7 +54,7 @@ export default function StoreItemDetailPage() {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store/${params.id}`);
         const data = await response.json();
         if (data.success) {
-          setItem(data.data);
+          setTool(data.data);
         } else {
           throw new Error(data.message || 'Failed to fetch store item details');
         }
@@ -70,21 +78,21 @@ export default function StoreItemDetailPage() {
   if (isLoading) {
     return (
       <PageContainer>
-        <div className="animate-pulse space-y-4 py-8">
-          <div className="h-8 bg-muted rounded w-3/4"></div>
-          <div className="h-4 bg-muted rounded w-1/4"></div>
-          <div className="h-96 bg-muted rounded"></div>
-          <div className="space-y-2">
-            <div className="h-4 bg-muted rounded"></div>
-            <div className="h-4 bg-muted rounded"></div>
-            <div className="h-4 bg-muted rounded w-3/4"></div>
+        <div className="animate-pulse space-y-8 py-8">
+          <div className="flex items-start gap-8">
+            <div className="w-40 h-40 bg-muted rounded-3xl" />
+            <div className="flex-1 space-y-4">
+              <div className="h-8 bg-muted rounded w-1/2" />
+              <div className="h-4 bg-muted rounded w-1/4" />
+              <div className="h-10 bg-muted rounded w-32 mt-6" />
+            </div>
           </div>
         </div>
       </PageContainer>
     );
   }
 
-  if (!item) {
+  if (!tool) {
     return (
       <PageContainer>
         <div className="py-8 text-center">
@@ -99,122 +107,205 @@ export default function StoreItemDetailPage() {
 
   return (
     <PageContainer className="py-8">
-      <Link
-        href="/store"
-        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
-      >
-        <ArrowLeft size={20} />
-        Back to Store
-      </Link>
+      <div className="max-w-6xl mx-auto">
+        {/* Back Button */}
+        <Link 
+          href="/store" 
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-8 group"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+          Back to Store
+        </Link>
 
-      <article>
-        <header className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
+        {/* Hero Section */}
+        <div className="flex items-start gap-8 mb-12">
+          <div className="relative w-40 h-40">
             <img
-              src={item.thumbnail}
-              alt={item.name}
-              className="w-16 h-16 rounded-lg object-cover"
+              src={tool.thumbnail}
+              alt={tool.name}
+              className="w-full h-full rounded-3xl object-cover shadow-lg"
             />
-            <div>
-              <h1 className="text-3xl font-bold">{item.name}</h1>
-              <p className="text-muted-foreground">
-                Added by {item.author_name} on {new Date(item.createdAt).toLocaleDateString()}
+          </div>
+
+          <div className="flex-1">
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-4xl font-bold">{tool.name}</h1>
+                <p className="text-lg text-muted-foreground mt-2">
+                  by {tool.developer_name || 'Unknown Developer'}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button 
+                  onClick={() => window.open(tool.url, '_blank')}
+                  size="lg"
+                  className="gap-2"
+                >
+                  Visit Tool
+                  <ArrowUpRight className="w-4 h-4" />
+                </Button>
+                {tool.dev_docs && (
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={() => window.open(tool.dev_docs, '_blank')}
+                    className="gap-2"
+                  >
+                    <Book className="w-4 h-4" />
+                    Documentation
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Rating & Stats */}
+            <div className="flex items-center gap-6 mt-6">
+              <div className="flex items-center gap-2">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`w-5 h-5 ${
+                      i < Math.floor(tool.average_rating)
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "fill-muted text-muted"
+                    }`}
+                  />
+                ))}
+                <span className="text-lg font-medium ml-2">
+                  {tool.average_rating.toFixed(1)}
+                </span>
+                <span className="text-muted-foreground">
+                  ({tool.total_reviews} reviews)
+                </span>
+              </div>
+              <div className="w-px h-6 bg-border" />
+              <Badge variant="outline">v{tool.version}</Badge>
+              <Badge variant="outline">{tool.category}</Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs Section */}
+        <Tabs defaultValue="overview" className="space-y-8">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
+            <TabsTrigger value="developer">Developer</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-8">
+            {/* Description */}
+            <div className="prose dark:prose-invert max-w-none">
+              <h2 className="text-2xl font-semibold mb-4">About this tool</h2>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                {tool.description}
               </p>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-6 text-sm">
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-              <span className="font-medium">{item.average_rating.toFixed(1)}</span>
-              <span className="text-muted-foreground">({item.total_reviews} reviews)</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
-              {item.views} views
-            </div>
-            <div className="flex items-center gap-1">
-              <Tag className="w-4 h-4" />
-              {item.category}
-            </div>
-            <div className="flex items-center gap-1">
-              <MessageSquare className="w-4 h-4" />
-              {item.reviews.length} comments
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-4 mt-4">
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              <Globe className="w-4 h-4" />
-              Visit Website
-            </a>
-            {item.github_url && (
-              <a
-                href={item.github_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-accent transition-colors"
-              >
-                <Github className="w-4 h-4" />
-                View Source
-              </a>
+            {/* Screenshots */}
+            {Array.isArray(tool.screenshots) && tool.screenshots.length > 0 && (
+              <div>
+                <h2 className="text-2xl font-semibold mb-6">Screenshots</h2>
+                <div className="grid grid-cols-2 gap-6">
+                  {tool.screenshots.map((screenshot, index) => (
+                    <img
+                      key={index}
+                      src={screenshot}
+                      alt={`${tool.name} screenshot ${index + 1}`}
+                      className="rounded-xl shadow-lg w-full h-auto hover:scale-[1.02] transition-transform cursor-pointer"
+                    />
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
-        </header>
 
-        <div className="prose prose-lg max-w-none">
-          <h2 className="text-xl font-semibold mb-4">About</h2>
-          <p className="text-muted-foreground whitespace-pre-wrap">{item.description}</p>
-        </div>
+            {/* Tags */}
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Tags</h2>
+              <div className="flex flex-wrap gap-2">
+                {tool.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
 
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Tags</h2>
-          <div className="flex flex-wrap gap-2">
-            {item.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
+          <TabsContent value="reviews" className="space-y-6">
+            {tool.reviews?.map((review, index) => (
+              <div
+                key={index}
+                className="bg-card border rounded-xl p-6 space-y-4"
               >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-8 pt-8 border-t">
-          <h2 className="text-xl font-semibold mb-6">Reviews</h2>
-          {item.reviews.length > 0 ? (
-            <div className="space-y-6">
-              {item.reviews.map((review, index) => (
-                <div key={index} className="p-4 rounded-lg border">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{review.user_name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(review.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                      <span>{review.rating}</span>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={review.user.avatar} />
+                      <AvatarFallback>
+                        {review.user.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{review.user.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {review.date}
+                      </p>
                     </div>
                   </div>
-                  <p className="text-muted-foreground">{review.comment}</p>
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < review.rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "fill-muted text-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
-              ))}
+                <p className="text-muted-foreground">{review.comment}</p>
+              </div>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="developer" className="space-y-6">
+            <div className="bg-card border rounded-xl p-8">
+              <div className="flex items-center gap-6 mb-8">
+                <Avatar className="w-20 h-20">
+                  <AvatarImage src={tool.developer_avatar} />
+                  <AvatarFallback>
+                    {(tool.developer_name || 'Unknown').charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="text-2xl font-semibold">
+                    {tool.developer_name || 'Unknown Developer'}
+                  </h2>
+                  {tool.developer_company && (
+                    <p className="text-muted-foreground">
+                      {tool.developer_company}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {tool.github_url && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.open(tool.github_url, '_blank')}
+                  className="gap-2"
+                >
+                  <Code className="w-4 h-4" />
+                  View Source Code
+                </Button>
+              )}
             </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">
-              No reviews yet. Be the first to review this tool!
-            </p>
-          )}
-        </div>
-      </article>
+          </TabsContent>
+        </Tabs>
+      </div>
     </PageContainer>
   );
 } 

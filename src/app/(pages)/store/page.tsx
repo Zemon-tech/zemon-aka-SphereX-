@@ -26,10 +26,9 @@ interface StoreItem {
   price: string;
   average_rating: number;
   total_reviews: number;
-  views: number;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
+  developer_name?: string;
+  version?: string;
+  lastUpdated?: string;
 }
 
 export default function StorePage() {
@@ -162,75 +161,71 @@ export default function StorePage() {
   });
 
   return (
-    <PageContainer className="py-6">
-      <PageHeader
-        title="Developer Tools"
-        description="Discover and share powerful tools for developers"
-        action={
-          <Button className="gap-2" onClick={() => setShowAddForm(true)}>
-            <Plus className="w-4 h-4" />
-            Submit Tool
-          </Button>
-        }
-      />
+    <PageContainer>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Tool Store</h1>
+          <p className="text-muted-foreground mt-1">
+            Discover and integrate powerful developer tools
+          </p>
+        </div>
+        <Button onClick={() => setShowAddForm(true)} className="gap-2">
+          <Plus className="w-4 h-4" />
+          Submit Tool
+        </Button>
+      </div>
 
-      <SearchAndFilter
-        searchPlaceholder="Search developer tools..."
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        filterValue={selectedCategory}
-        onFilterChange={setSelectedCategory}
-        filterOptions={filterOptions}
-        extraActions={
-          <div className="flex gap-2">
-            <select className="px-4 py-2.5 rounded-lg border bg-background">
-              <option value="popular">Most Popular</option>
-              <option value="recent">Recently Added</option>
-              <option value="trending">Trending</option>
-            </select>
-          </div>
-        }
-      />
+      <div className="space-y-6">
+        <SearchAndFilter
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
 
-      {/* Store Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-        {isLoading ? (
-          // Loading skeleton
-          [...Array(6)].map((_, i) => (
-            <div key={i} className="p-6 rounded-lg border bg-card animate-pulse">
-              <div className="h-48 bg-muted rounded-lg mb-4"></div>
-              <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-muted rounded w-full mb-4"></div>
-              <div className="h-4 bg-muted rounded w-1/2 mb-6"></div>
-              <div className="flex justify-between items-center">
-                <div className="h-8 bg-muted rounded w-24"></div>
-                <div className="h-4 bg-muted rounded w-16"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {isLoading ? (
+            // Loading skeleton
+            [...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="h-[160px] bg-card animate-pulse rounded-2xl border p-6"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 bg-muted rounded-[18px]" />
+                    <div className="space-y-2">
+                      <div className="h-6 bg-muted rounded w-32" />
+                      <div className="h-4 bg-muted rounded w-24" />
+                    </div>
+                  </div>
+                  <div className="w-24 h-7 bg-muted rounded-full flex-shrink-0" />
+                </div>
+                <div className="mt-auto">
+                  <div className="h-4 bg-muted rounded w-2/3" />
+                </div>
               </div>
+            ))
+          ) : filteredItems.length > 0 ? (
+            filteredItems.map((item) => (
+              <StoreCard
+                key={item._id}
+                tool={{
+                  id: item._id,
+                  title: item.name,
+                  description: item.description,
+                  image: item.thumbnail,
+                  developer: item.developer_name || 'Unknown Developer',
+                  url: item.url,
+                }}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12 text-muted-foreground">
+              No tools found
             </div>
-          ))
-        ) : filteredItems.length > 0 ? (
-          filteredItems.map((item) => (
-            <StoreCard
-              key={item._id}
-              tool={{
-                id: item._id,
-                title: item.name,
-                description: item.description,
-                image: item.thumbnail,
-                rating: item.average_rating,
-                reviews: item.total_reviews,
-                category: item.category,
-                tags: item.tags,
-                url: item.url,
-                github: item.github_url,
-              }}
-            />
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12 text-muted-foreground">
-            No tools found
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Add Tool Form Modal */}

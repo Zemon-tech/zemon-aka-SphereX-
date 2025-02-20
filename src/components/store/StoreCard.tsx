@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Star, Edit2, Trash2, Globe, Github } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface StoreCardProps {
   tool: {
@@ -11,129 +11,72 @@ interface StoreCardProps {
     title: string;
     description: string;
     image: string;
-    rating: number;
-    reviews: number;
-    category: string;
-    tags: string[];
+    developer: string;
     url: string;
-    github?: string;
   };
-  onEdit?: () => void;
-  onDelete?: () => void;
 }
 
-export default function StoreCard({ tool, onEdit, onDelete }: StoreCardProps) {
-  const router = useRouter();
-
-  const handleCardClick = () => {
-    router.push(`/store/${tool.id}`);
+export default function StoreCard({ tool }: StoreCardProps) {
+  const handleVisitClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.open(tool.url, '_blank', 'noopener,noreferrer');
   };
 
-  const handleLinkClick = (e: React.MouseEvent, url: string) => {
-    e.stopPropagation(); // Prevent card click when clicking links
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  // Get first 3 words of description
+  const shortDescription = tool.description
+    .split(' ')
+    .slice(0, 3)
+    .join(' ')
+    .concat('...');
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="group relative rounded-lg border bg-card overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-      onClick={handleCardClick}
-    >
-      {/* Admin Actions */}
-      {(onEdit || onDelete) && (
-        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          {onEdit && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              className="p-2 rounded-full bg-background/80 hover:bg-background border shadow-sm"
-              title="Edit"
-            >
-              <Edit2 size={16} />
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="p-2 rounded-full bg-background/80 hover:bg-background border shadow-sm text-destructive"
-              title="Delete"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
-        </div>
-      )}
+    <Link href={`/store/${tool.id}`}>
+      <motion.article
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="group relative h-[160px] bg-card rounded-2xl border hover:border-primary/20 hover:shadow-lg transition-all duration-300"
+      >
+        <div className="p-6 h-full flex flex-col">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              {/* Logo */}
+              <div className="relative w-14 h-14">
+                <img
+                  src={tool.image}
+                  alt={tool.title}
+                  className="w-full h-full rounded-[18px] object-cover shadow-sm group-hover:shadow-md transition-all duration-300"
+                />
+              </div>
 
-      <div className="relative h-48">
-        <img
-          src={tool.image}
-          alt={tool.title}
-          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
-      </div>
-      
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
-            {tool.category}
-          </span>
-          <div className="flex items-center gap-1 ml-auto">
-            <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-            <span className="text-sm font-medium">{tool.rating}</span>
-            <span className="text-xs text-muted-foreground">
-              ({tool.reviews})
-            </span>
+              {/* Content */}
+              <div>
+                <h3 className="text-lg font-semibold leading-tight group-hover:text-primary transition-colors">
+                  {tool.title}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  by {tool.developer}
+                </p>
+              </div>
+            </div>
+
+            {/* Visit Button */}
+            <button
+              onClick={handleVisitClick}
+              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground text-xs font-medium px-4 py-1.5 rounded-full flex items-center gap-1.5 transition-all duration-300 group/btn"
+            >
+              Visit Site
+              <ArrowUpRight 
+                className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" 
+              />
+            </button>
           </div>
-        </div>
-        
-        <div className="block mb-4">
-          <h2 className="text-xl font-semibold group-hover:text-primary transition-colors">
-            {tool.title}
-          </h2>
-          
-          <p className="text-muted-foreground text-sm mt-2 line-clamp-2">
-            {tool.description}
+
+          {/* Description */}
+          <p className="text-sm text-muted-foreground mt-auto line-clamp-1">
+            {shortDescription}
           </p>
         </div>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          {tool.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-xs text-muted-foreground"
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={(e) => handleLinkClick(e, tool.url)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-          >
-            <Globe size={14} />
-            Website
-          </button>
-          {tool.github && (
-            <button
-              onClick={(e) => handleLinkClick(e, tool.github!)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-            >
-              <Github size={14} />
-              Source
-            </button>
-          )}
-        </div>
-      </div>
-    </motion.article>
+      </motion.article>
+    </Link>
   );
 } 

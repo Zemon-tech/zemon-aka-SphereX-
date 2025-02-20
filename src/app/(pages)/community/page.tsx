@@ -21,7 +21,7 @@ interface Idea {
   author: {
     _id: string;
     name: string;
-  };
+  } | null;
   createdAt: string;
 }
 
@@ -52,6 +52,12 @@ export default function CommunityPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchResources = () => {
+    // This will trigger the ResourceList component to refetch
+    // by forcing a remount of the component
+    setActiveTab("resources");
   };
 
   useEffect(() => {
@@ -137,10 +143,7 @@ export default function CommunityPage() {
                         id: idea._id,
                         title: idea.title,
                         description: idea.description,
-                        author: {
-                          _id: typeof idea.author === 'string' ? idea.author : idea.author._id,
-                          name: typeof idea.author === 'string' ? 'Anonymous' : idea.author.name
-                        },
+                        author: idea.author || null,
                         createdAt: idea.createdAt,
                       }}
                       onDelete={fetchIdeas}
@@ -170,6 +173,7 @@ export default function CommunityPage() {
       <ShareResourceModal
         isOpen={isShareResourceOpen}
         onClose={() => setIsShareResourceOpen(false)}
+        onResourceAdded={fetchResources}
       />
     </PageContainer>
   );

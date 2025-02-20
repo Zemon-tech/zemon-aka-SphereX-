@@ -47,11 +47,26 @@ export default function ShareResourceModal({ isOpen, onClose, onResourceAdded }:
     setIsSubmitting(true);
 
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to share a resource",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const response = await axios.post('http://localhost:5002/api/community/resources', {
         title: formData.title,
         description: formData.description,
         resourceType: formData.resourceType,
         url: formData.url.startsWith('http') ? formData.url : `https://${formData.url}`
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (response.status === 201) {

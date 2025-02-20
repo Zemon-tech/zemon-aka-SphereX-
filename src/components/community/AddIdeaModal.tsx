@@ -29,11 +29,15 @@ export default function AddIdeaModal({ isOpen, onClose, onIdeaAdded }: AddIdeaMo
     setIsSubmitting(true);
 
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.post('http://localhost:5002/api/community/ideas', {
         title: formData.title,
         description: formData.description
       }, {
-        withCredentials: true // This ensures cookies are sent with the request
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (response.status === 201) {

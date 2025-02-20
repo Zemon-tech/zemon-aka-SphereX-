@@ -2,6 +2,8 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Idea from '../models/idea.model';
 import Resource, { ResourceType } from '../models/resource.model';
+import { auth } from '../middleware/auth.middleware';
+import { AuthRequest } from '../middleware/auth.middleware';
 
 const router = express.Router();
 
@@ -10,6 +12,7 @@ router.get('/ideas', async (req: Request, res: Response) => {
   try {
     console.log('Attempting to fetch ideas from MongoDB...');
     const ideas = await Idea.find()
+      .populate('author', 'name')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -57,7 +60,7 @@ router.delete('/ideas/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/ideas', async (req: Request, res: Response) => {
+router.post('/ideas', auth, async (req: AuthRequest, res: Response) => {
   try {
     console.log('Received idea creation request:', req.body);
     
@@ -66,20 +69,18 @@ router.post('/ideas', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Title and description are required' });
     }
 
-    // Create a new MongoDB ObjectId for the author
-    const authorId = new mongoose.Types.ObjectId();
-
     const idea = new Idea({
       title,
       description,
-      author: authorId
+      author: req.user?.id
     });
 
     console.log('Attempting to save idea:', idea);
     const savedIdea = await idea.save();
-    console.log('Idea saved successfully:', savedIdea);
+    const populatedIdea = await savedIdea.populate('author', 'name');
+    console.log('Idea saved successfully:', populatedIdea);
 
-    res.status(201).json(savedIdea);
+    res.status(201).json(populatedIdea);
   } catch (error) {
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
@@ -98,6 +99,7 @@ router.get('/resources', async (req: Request, res: Response) => {
   try {
     console.log('Attempting to fetch resources from MongoDB...');
     const resources = await Resource.find()
+      .populate('addedBy', 'name')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -116,7 +118,7 @@ router.get('/resources', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/resources', async (req: Request, res: Response) => {
+router.post('/resources', auth, async (req: AuthRequest, res: Response) => {
   try {
     console.log('Received resource creation request:', req.body);
     
@@ -153,22 +155,20 @@ router.post('/resources', async (req: Request, res: Response) => {
       });
     }
 
-    // Create a new MongoDB ObjectId for the author
-    const authorId = new mongoose.Types.ObjectId();
-
     const resource = new Resource({
       title: title.trim(),
       description: description.trim(),
       resourceType,
       url: url.trim(),
-      addedBy: authorId
+      addedBy: req.user?.id
     });
 
     console.log('Attempting to save resource:', resource);
     const savedResource = await resource.save();
-    console.log('Resource saved successfully:', savedResource);
+    const populatedResource = await savedResource.populate('addedBy', 'name');
+    console.log('Resource saved successfully:', populatedResource);
 
-    res.status(201).json(savedResource);
+    res.status(201).json(populatedResource);
   } catch (error) {
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',

@@ -373,3 +373,134 @@ Implemented a secure authentication system with MongoDB for storage and Redis fo
 3. Implement OAuth providers (Google, GitHub)
 4. Add rate limiting
 5. Enhance security measures
+
+# Backend Documentation
+
+## Community Features
+
+### Ideas Section
+- `GET /api/community/ideas` - Get all ideas (cached)
+- `POST /api/community/ideas` - Create a new idea (requires auth)
+- `PUT /api/community/ideas/:id/like` - Like/unlike an idea (requires auth)
+
+### Comments Section
+- `GET /api/community/ideas/:ideaId/comments` - Get all comments for an idea (cached)
+- `POST /api/community/ideas/:ideaId/comments` - Add a comment to an idea (requires auth)
+
+### Resources Section
+- `GET /api/community/resources` - Get all resources (cached)
+- `POST /api/community/resources` - Add a new resource (requires auth)
+- `PUT /api/community/resources/:id/like` - Like/unlike a resource (requires auth)
+
+## Models
+
+### Idea Model
+```typescript
+{
+  title: string;          // Title of the idea
+  description: string;    // Description of the idea
+  author: ObjectId;       // Reference to User model
+  likes: ObjectId[];      // Array of User IDs who liked
+  comments: ObjectId[];   // Array of Comment IDs
+  createdAt: Date;       // Creation timestamp
+  updatedAt: Date;       // Last update timestamp
+}
+```
+
+### Comment Model
+```typescript
+{
+  text: string;          // Comment text
+  author: ObjectId;      // Reference to User model
+  idea: ObjectId;        // Reference to Idea model
+  likes: ObjectId[];     // Array of User IDs who liked
+  createdAt: Date;       // Creation timestamp
+  updatedAt: Date;       // Last update timestamp
+}
+```
+
+### Resource Model
+```typescript
+{
+  title: string;          // Resource title
+  description: string;    // Resource description
+  resourceType: enum;     // PDF, VIDEO, or TOOL
+  url: string;           // Resource URL
+  addedBy: ObjectId;     // Reference to User model
+  likes: ObjectId[];     // Array of User IDs who liked
+  views: number;         // View count
+  createdAt: Date;       // Creation timestamp
+  updatedAt: Date;       // Last update timestamp
+}
+```
+
+## Caching Strategy
+
+The backend uses Redis for caching frequently accessed data:
+
+- Ideas list is cached with prefix 'ideas'
+- Comments are cached with prefix 'comments'
+- Resources are cached with prefix 'resources'
+- Cache TTL is set to 1 hour by default
+- Cache is invalidated when related data is modified
+
+## Authentication
+
+All write operations require authentication using JWT tokens:
+- Token should be included in the Authorization header
+- Format: `Bearer <token>`
+
+## Environment Variables
+
+```env
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/community
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=optional
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=7d
+```
+
+## Error Handling
+
+All endpoints return appropriate HTTP status codes:
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 401: Unauthorized
+- 404: Not Found
+- 500: Server Error
+
+Each error response includes a message field explaining the error.
+
+## [2025-02-20] - Implemented Author Name for Ideas & Resources
+### Changes:
+- Updated MongoDB schema to properly use author references for ideas and resources
+- Added authentication middleware to idea and resource creation routes
+- Modified backend API to use authenticated user's ID as author/addedBy
+- Updated API responses to populate author name in ideas and resources
+- Added proper error handling for authentication failures
+- Ensured backward compatibility with existing data
+- Verified seamless integration with frontend components
+
+### API Updates:
+1. Ideas API
+   - POST `/api/community/ideas` now requires authentication
+   - Author field is automatically set to the authenticated user
+   - Response includes populated author name
+
+2. Resources API
+   - POST `/api/community/resources` now requires authentication
+   - AddedBy field is automatically set to the authenticated user
+   - Response includes populated author name
+
+### Security
+- Added token-based authentication for creating ideas and resources
+- Proper validation of user tokens
+- Secure handling of user data
+
+### Data Structure
+- Ideas: author field references User model
+- Resources: addedBy field references User model
+- Both include populated author name in responses

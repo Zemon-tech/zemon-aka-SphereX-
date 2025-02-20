@@ -41,6 +41,7 @@ const ResourceSchema = new Schema({
   },
   addedBy: {
     type: Schema.Types.ObjectId,
+    ref: 'User',
     required: [true, 'Author is required'],
     index: true
   }

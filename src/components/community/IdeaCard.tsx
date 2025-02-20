@@ -17,7 +17,7 @@ interface IdeaCardProps {
     author: {
       _id: string;
       name: string;
-    };
+    } | null;
     createdAt: string;
   };
   onDelete?: () => void;
@@ -62,7 +62,7 @@ export default function IdeaCard({ idea, onDelete }: IdeaCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={avatarUrl} alt={idea.author.name} />
+              <AvatarImage src={avatarUrl} alt={authorName} />
               <AvatarFallback>{authorName.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">

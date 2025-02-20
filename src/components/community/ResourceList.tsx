@@ -14,6 +14,10 @@ interface Resource {
   description: string;
   resourceType: 'PDF' | 'VIDEO' | 'TOOL';
   url: string;
+  addedBy: {
+    _id: string;
+    name: string;
+  } | null;
   createdAt: string;
 }
 
@@ -39,7 +43,13 @@ export default function ResourceList() {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await axios.get('http://localhost:5002/api/community/resources');
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5002/api/community/resources', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Resources fetched:', response.data);
       setResources(response.data);
     } catch (err) {
       console.error('Error fetching resources:', err);
@@ -97,6 +107,9 @@ export default function ResourceList() {
                       <Badge variant="secondary">
                         {resource.resourceType}
                       </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        Added by {resource.addedBy?.name || 'Anonymous'}
+                      </span>
                       <span className="text-sm text-muted-foreground">
                         {new Date(resource.createdAt).toLocaleDateString()}
                       </span>

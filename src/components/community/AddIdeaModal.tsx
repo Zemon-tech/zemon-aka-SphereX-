@@ -26,36 +26,96 @@ export default function AddIdeaModal({ isOpen, onClose, onIdeaAdded }: AddIdeaMo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    // Detailed auth check logging
+    console.log('Auth Check:', {
+      hasToken: Boolean(token),
+      tokenValue: token ? `${token.substring(0, 10)}...` : 'missing',
+      user,
+      hasUserId: Boolean(user?._id),
+      localStorage: {
+        allKeys: Object.keys(localStorage),
+        token: Boolean(localStorage.getItem('token')),
+        user: Boolean(localStorage.getItem('user'))
+      }
+    });
+
+    if (!token || !user?._id) {
+      console.log('Auth check failed:', { token: Boolean(token), userId: Boolean(user?._id) });
+      toast({
+        title: "Error",
+        description: "Please login to share ideas",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('http://localhost:5002/api/community/ideas', {
-        title: formData.title,
-        description: formData.description
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      console.log('Making API request:', {
+        url: 'http://localhost:5002/api/community/ideas',
+        data: formData,
+        headers: config.headers
       });
+
+      const response = await axios.post(
+        'http://localhost:5002/api/community/ideas',
+        formData,
+        config
+      );
+
+      console.log('API Response:', response.data);
 
       if (response.status === 201) {
         toast({
           title: "Success",
           description: "Your idea has been shared successfully!",
         });
-        // Reset form
         setFormData({
           title: "",
           description: "",
           tags: "",
         });
-        // Notify parent component to refresh ideas list
         onIdeaAdded?.();
         onClose();
       }
-    } catch (error) {
-      console.error('Error sharing idea:', error);
-      toast({
-        title: "Error",
-        description: "Failed to share your idea. Please try again.",
-        variant: "destructive",
+    } catch (error: any) {
+      console.error('Request error:', {
+        error,
+        response: error.response?.data,
+        status: error.response?.status
       });
+
+      if (error.response?.status === 401) {
+        console.log('Auth failed - clearing session');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        toast({
+          title: "Authentication Error",
+          description: "Session expired. Please login again.",
+          variant: "destructive",
+        });
+        
+        window.location.href = '/login';
+      } else {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || "Failed to share your idea. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

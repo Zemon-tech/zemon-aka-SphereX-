@@ -4,6 +4,7 @@ export interface IIdea extends Document {
   title: string;
   description: string;
   author: Schema.Types.ObjectId;
+  authorName: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,9 +25,12 @@ const IdeaSchema = new Schema({
   author: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Author is required'],
-    index: true
+    required: true
   },
+  authorName: {
+    type: String,
+    required: true
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

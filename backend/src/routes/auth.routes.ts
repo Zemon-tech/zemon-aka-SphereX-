@@ -5,6 +5,7 @@ import User from '../models/user.model';
 import { AppError } from '../utils/errors';
 import { setCache, getCache, deleteCache } from '../utils/redis';
 import logger from '../utils/logger';
+import { login, register, githubAuth } from '../controllers/auth.controller';
 
 const router = Router();
 const CACHE_EXPIRATION = 3600; // 1 hour
@@ -73,29 +74,40 @@ router.post('/login', async (req, res, next) => {
       throw new AppError('Invalid credentials', 401);
     }
 
-    // Generate token
+    // Generate token with consistent payload structure
     const token = jwt.sign(
-      { id: user._id },
+      { 
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
       config.jwtSecret,
       { expiresIn: '7d' }
     );
 
-    // Cache user data
+    // Log the token being generated
+    console.log('Generated token:', {
+      token: token.substring(0, 20) + '...',
+      payload: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
     const userData = {
-      id: user._id,
+      _id: user._id,
       name: user.name,
       email: user.email,
-      avatar: user.avatar,
       role: user.role
     };
-    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
 
     res.json({
       success: true,
-      data: {
-        token,
-        user: userData
-      }
+      token, // Send token directly
+      user: userData // Send user directly
     });
   } catch (error) {
     next(error);

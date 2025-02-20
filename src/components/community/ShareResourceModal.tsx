@@ -35,6 +35,19 @@ export default function ShareResourceModal({ isOpen, onClose, onResourceAdded }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Get user data and token
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!token || !user?._id) {
+      toast({
+        title: "Error",
+        description: "Please login to share resources",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!formData.resourceType) {
       toast({
         title: "Error",
@@ -47,12 +60,18 @@ export default function ShareResourceModal({ isOpen, onClose, onResourceAdded }:
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('http://localhost:5002/api/community/resources', {
-        title: formData.title,
-        description: formData.description,
-        resourceType: formData.resourceType,
-        url: formData.url.startsWith('http') ? formData.url : `https://${formData.url}`
-      });
+      const response = await axios.post(
+        'http://localhost:5002/api/community/resources',
+        {
+          ...formData,
+          url: formData.url.startsWith('http') ? formData.url : `https://${formData.url}`
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
 
       if (response.status === 201) {
         toast({
@@ -72,11 +91,19 @@ export default function ShareResourceModal({ isOpen, onClose, onResourceAdded }:
       }
     } catch (error: any) {
       console.error('Error sharing resource:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to share resource. Please try again.",
-        variant: "destructive",
-      });
+      if (error.response?.status === 401) {
+        toast({
+          title: "Authentication Error",
+          description: "Please login again to share resources",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || "Failed to share resource. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

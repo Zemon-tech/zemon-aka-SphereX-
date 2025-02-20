@@ -15,6 +15,7 @@ interface Resource {
   resourceType: 'PDF' | 'VIDEO' | 'TOOL';
   url: string;
   createdAt: string;
+  authorName: string;
 }
 
 const getResourceIcon = (type: string) => {
@@ -100,6 +101,9 @@ export default function ResourceList() {
                       <span className="text-sm text-muted-foreground">
                         {new Date(resource.createdAt).toLocaleDateString()}
                       </span>
+                    </div>
+                    <div className="mt-4 text-sm text-muted-foreground">
+                      Shared by {resource.authorName}
                     </div>
                   </div>
                   <Button

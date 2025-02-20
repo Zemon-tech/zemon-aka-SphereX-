@@ -2,98 +2,33 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Idea from '../models/idea.model';
 import Resource, { ResourceType } from '../models/resource.model';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
-// Ideas Routes
+// Public routes - viewing ideas and resources
 router.get('/ideas', async (req: Request, res: Response) => {
   try {
     console.log('Attempting to fetch ideas from MongoDB...');
     const ideas = await Idea.find()
       .sort({ createdAt: -1 })
-      .lean();
+      .lean()
+      .exec();
     
-    console.log('Ideas fetched successfully:', ideas);
-    res.json(ideas);
+    // Transform the data to include authorName
+    const ideasWithAuthorNames = ideas.map(idea => ({
+      ...idea,
+      authorName: idea.authorName // Make sure this field exists
+    }));
+
+    console.log('Ideas fetched successfully:', ideasWithAuthorNames);
+    res.json(ideasWithAuthorNames);
   } catch (error) {
-    console.error('Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    res.status(500).json({ 
-      message: 'Error fetching ideas',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    console.error('Error fetching ideas:', error);
+    res.status(500).json({ message: 'Error fetching ideas' });
   }
 });
 
-router.delete('/ideas/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid idea ID' });
-    }
-
-    const deletedIdea = await Idea.findByIdAndDelete(id);
-    
-    if (!deletedIdea) {
-      return res.status(404).json({ message: 'Idea not found' });
-    }
-
-    console.log('Idea deleted successfully:', deletedIdea);
-    res.json({ message: 'Idea deleted successfully' });
-  } catch (error) {
-    console.error('Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    res.status(500).json({ 
-      message: 'Error deleting idea',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
-
-router.post('/ideas', async (req: Request, res: Response) => {
-  try {
-    console.log('Received idea creation request:', req.body);
-    
-    const { title, description } = req.body;
-    if (!title || !description) {
-      return res.status(400).json({ message: 'Title and description are required' });
-    }
-
-    // Create a new MongoDB ObjectId for the author
-    const authorId = new mongoose.Types.ObjectId();
-
-    const idea = new Idea({
-      title,
-      description,
-      author: authorId
-    });
-
-    console.log('Attempting to save idea:', idea);
-    const savedIdea = await idea.save();
-    console.log('Idea saved successfully:', savedIdea);
-
-    res.status(201).json(savedIdea);
-  } catch (error) {
-    console.error('Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    res.status(500).json({ 
-      message: 'Error creating idea',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
-
-// Resources Routes
 router.get('/resources', async (req: Request, res: Response) => {
   try {
     console.log('Attempting to fetch resources from MongoDB...');
@@ -116,11 +51,41 @@ router.get('/resources', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/resources', async (req: Request, res: Response) => {
+// Protected routes - require authentication
+router.post('/ideas', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    console.log('Received resource creation request:', req.body);
+    const { title, description } = req.body;
     
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    if (!title || !description) {
+      return res.status(400).json({ message: 'Title and description are required' });
+    }
+
+    const idea = new Idea({
+      title: title.trim(),
+      description: description.trim(),
+      author: req.user._id,
+      authorName: req.user.name // Make sure to include the author's name
+    });
+
+    const savedIdea = await idea.save();
+    res.status(201).json(savedIdea);
+  } catch (error) {
+    console.error('Error creating idea:', error);
+    res.status(500).json({ message: 'Error creating idea' });
+  }
+});
+
+router.post('/resources', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
     const { title, description, resourceType, url } = req.body;
+    
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
 
     // Validate required fields
     if (!title || !description || !resourceType || !url) {
@@ -153,21 +118,16 @@ router.post('/resources', async (req: Request, res: Response) => {
       });
     }
 
-    // Create a new MongoDB ObjectId for the author
-    const authorId = new mongoose.Types.ObjectId();
-
     const resource = new Resource({
       title: title.trim(),
       description: description.trim(),
       resourceType,
       url: url.trim(),
-      addedBy: authorId
+      author: req.user._id,
+      authorName: req.user.name
     });
 
-    console.log('Attempting to save resource:', resource);
     const savedResource = await resource.save();
-    console.log('Resource saved successfully:', savedResource);
-
     res.status(201).json(savedResource);
   } catch (error) {
     console.error('Error details:', {
@@ -177,6 +137,80 @@ router.post('/resources', async (req: Request, res: Response) => {
     });
     res.status(500).json({ 
       message: 'Error creating resource',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.delete('/ideas/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid idea ID' });
+    }
+
+    const idea = await Idea.findById(id);
+    
+    if (!idea) {
+      return res.status(404).json({ message: 'Idea not found' });
+    }
+
+    if (idea.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this idea' });
+    }
+
+    await Idea.deleteOne({ _id: id });
+    res.json({ message: 'Idea deleted successfully' });
+  } catch (error) {
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    res.status(500).json({ 
+      message: 'Error deleting idea',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.delete('/resources/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid resource ID' });
+    }
+
+    const resource = await Resource.findById(id);
+    
+    if (!resource) {
+      return res.status(404).json({ message: 'Resource not found' });
+    }
+
+    if (resource.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this resource' });
+    }
+
+    await Resource.deleteOne({ _id: id });
+    res.json({ message: 'Resource deleted successfully' });
+  } catch (error) {
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    res.status(500).json({ 
+      message: 'Error deleting resource',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

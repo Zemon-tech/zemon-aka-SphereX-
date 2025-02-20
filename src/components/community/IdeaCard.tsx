@@ -11,10 +11,11 @@ import axios from "axios";
 
 interface IdeaCardProps {
   idea: {
-    id: string;
+    _id: string;
     title: string;
     description: string;
     author: string;
+    authorName: string;
     createdAt: string;
   };
   onDelete?: () => void;
@@ -23,28 +24,46 @@ interface IdeaCardProps {
 export default function IdeaCard({ idea, onDelete }: IdeaCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // Generate avatar URL using UI Avatars
-  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent('Community Member')}&background=random`;
+  // Add fallback for authorName
+  const authorName = idea.authorName || 'Anonymous';
+  
+  // Generate avatar URL using the author's name with fallback
+  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=random`;
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this idea? This action cannot be undone.')) {
       return;
     }
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({
+        title: "Error",
+        description: "Please login to delete ideas",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsDeleting(true);
-      await axios.delete(`http://localhost:5002/api/community/ideas/${idea.id}`);
+      await axios.delete(`http://localhost:5002/api/community/ideas/${idea._id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       toast({
         title: "Success",
         description: "Idea deleted successfully",
       });
       onDelete?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting idea:', error);
       toast({
         title: "Error",
-        description: "Failed to delete idea. Please try again.",
+        description: error.response?.data?.message || "Failed to delete idea. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -58,29 +77,31 @@ export default function IdeaCard({ idea, onDelete }: IdeaCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={avatarUrl} alt="Community Member" />
-              <AvatarFallback>CM</AvatarFallback>
+              <AvatarImage src={avatarUrl} alt={authorName} />
+              <AvatarFallback>{authorName.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
-              <p className="text-sm font-medium">Community Member</p>
+              <p className="text-sm font-medium">{authorName}</p>
               <p className="text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(idea.createdAt), { addSuffix: true })}
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-          >
-            {isDeleting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4" />
-            )}
-          </Button>
+          {user._id === idea.author && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex-1">

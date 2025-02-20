@@ -13,16 +13,19 @@ import AddIdeaModal from "@/components/community/AddIdeaModal";
 import ShareResourceModal from "@/components/community/ShareResourceModal";
 import axios from "axios";
 import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 interface Idea {
   _id: string;
   title: string;
   description: string;
   author: string;
+  authorName: string;
   createdAt: string;
 }
 
 export default function CommunityPage() {
+  const router = useRouter();
   const [isAddIdeaOpen, setIsAddIdeaOpen] = useState(false);
   const [isShareResourceOpen, setIsShareResourceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,6 +33,7 @@ export default function CommunityPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [user, setUser] = useState(null);
 
   const fetchIdeas = async () => {
     try {
@@ -37,14 +41,9 @@ export default function CommunityPage() {
       setError(null);
       const response = await axios.get('http://localhost:5002/api/community/ideas');
       setIdeas(response.data);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching ideas:', error);
-      setError('Failed to load ideas. Please try again later.');
-      toast({
-        title: "Error",
-        description: "Failed to load ideas. Please try again later.",
-        variant: "destructive",
-      });
+      setError('Failed to fetch ideas');
     } finally {
       setIsLoading(false);
     }
@@ -52,12 +51,43 @@ export default function CommunityPage() {
 
   useEffect(() => {
     fetchIdeas();
+    // Check for user authentication
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
   }, []);
 
   const filteredIdeas = ideas.filter(idea =>
     idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     idea.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleShareClick = () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to share ideas",
+        variant: "destructive",
+      });
+      router.push('/login');
+      return;
+    }
+    setIsAddIdeaOpen(true);
+  };
+
+  const handleShareResourceClick = () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to share resources",
+        variant: "destructive",
+      });
+      router.push('/login');
+      return;
+    }
+    setIsShareResourceOpen(true);
+  };
 
   return (
     <PageContainer>
@@ -70,7 +100,7 @@ export default function CommunityPage() {
               Share ideas, learn, and grow together with fellow developers
             </p>
           </div>
-          <Button onClick={() => setIsAddIdeaOpen(true)} className="gap-2">
+          <Button onClick={handleShareClick} className="gap-2">
             <Plus className="w-4 h-4" />
             Share Idea
           </Button>
@@ -127,6 +157,7 @@ export default function CommunityPage() {
                         title: idea.title,
                         description: idea.description,
                         author: idea.author,
+                        authorName: idea.authorName,
                         createdAt: idea.createdAt,
                       }}
                       onDelete={fetchIdeas}
@@ -144,7 +175,7 @@ export default function CommunityPage() {
           <TabsContent value="resources" className="space-y-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold">Community Resources</h2>
-              <Button onClick={() => setIsShareResourceOpen(true)} className="gap-2">
+              <Button onClick={handleShareResourceClick} className="gap-2">
                 <Plus className="w-4 h-4" />
                 Share Resource
               </Button>

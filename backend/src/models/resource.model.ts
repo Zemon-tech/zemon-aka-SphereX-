@@ -11,7 +11,8 @@ export interface IResource extends Document {
   description: string;
   resourceType: ResourceType;
   url: string;
-  addedBy: Schema.Types.ObjectId;
+  author: Schema.Types.ObjectId;
+  authorName: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,30 +20,32 @@ export interface IResource extends Document {
 const ResourceSchema = new Schema({
   title: {
     type: String,
-    required: [true, 'Title is required'],
-    trim: true,
-    maxlength: [100, 'Title cannot be more than 100 characters']
+    required: true,
+    trim: true
   },
   description: {
     type: String,
-    required: [true, 'Description is required'],
-    trim: true,
-    maxlength: [1000, 'Description cannot be more than 1000 characters']
+    required: true,
+    trim: true
   },
   resourceType: {
     type: String,
-    enum: Object.values(ResourceType),
-    required: [true, 'Resource type is required']
+    enum: ['PDF', 'VIDEO', 'TOOL'],
+    required: true
   },
   url: {
     type: String,
-    required: [true, 'URL is required'],
+    required: true,
     trim: true
   },
-  addedBy: {
+  author: {
     type: Schema.Types.ObjectId,
-    required: [true, 'Author is required'],
-    index: true
+    ref: 'User',
+    required: true
+  },
+  authorName: {
+    type: String,
+    required: true
   }
 }, {
   timestamps: true,

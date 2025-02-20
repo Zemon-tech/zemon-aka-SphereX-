@@ -1,6 +1,18 @@
-import { Schema, model } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { IUser } from './interfaces';
+
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  password: string;
+  avatar: string;
+  bio: string;
+  github: string;
+  twitter: string;
+  linkedin: string;
+  role: string;
+  comparePassword(candidatePassword: string): Promise<boolean>;
+}
 
 const userSchema = new Schema<IUser>({
   name: {
@@ -59,4 +71,7 @@ userSchema.methods.comparePassword = async function(candidatePassword: string): 
 // Create indexes
 userSchema.index({ email: 1 });
 
-export default model<IUser>('User', userSchema); 
+// Export both the model and its type
+const User = mongoose.model<IUser>('User', userSchema);
+export { User };  // Named export
+export default User; // Default export 

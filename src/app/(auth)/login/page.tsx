@@ -24,6 +24,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      console.log('Submitting login form:', formData);
+
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
@@ -34,17 +36,29 @@ export default function LoginPage() {
       });
 
       const data = await response.json();
+      console.log('Auth API Response:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Authentication failed');
       }
 
-      // Store token and user data
-      localStorage.setItem('token', data.data.token);
-      localStorage.setItem('user', JSON.stringify(data.data.user));
+      // Store token and user directly from response
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Verify stored data
+      const storedToken = localStorage.getItem('token');
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+      console.log('Stored auth data:', {
+        token: storedToken ? `${storedToken.substring(0, 10)}...` : 'missing',
+        user: storedUser,
+        hasToken: Boolean(storedToken),
+        hasUser: Boolean(storedUser._id)
+      });
 
       // Dispatch auth state change event
-      const event = new CustomEvent('auth-state-change', { detail: data.data.user });
+      const event = new CustomEvent('auth-state-change', { detail: data.user });
       window.dispatchEvent(event);
 
       toast({

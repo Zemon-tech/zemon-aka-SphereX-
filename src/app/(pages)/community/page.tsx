@@ -13,6 +13,7 @@ import AddIdeaModal from "@/components/community/AddIdeaModal";
 import ShareResourceModal from "@/components/community/ShareResourceModal";
 import axios from "axios";
 import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 interface Idea {
   _id: string;
@@ -34,6 +35,26 @@ export default function CommunityPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
+
+  const handleShareClick = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to share your ideas and resources.",
+        variant: "destructive",
+      });
+      router.push('/login');
+      return;
+    }
+    
+    if (activeTab === "ideas") {
+      setIsAddIdeaOpen(true);
+    } else {
+      setIsShareResourceOpen(true);
+    }
+  };
 
   const fetchIdeas = async () => {
     try {
@@ -55,8 +76,6 @@ export default function CommunityPage() {
   };
 
   const fetchResources = () => {
-    // This will trigger the ResourceList component to refetch
-    // by forcing a remount of the component
     setActiveTab("resources");
   };
 
@@ -80,17 +99,10 @@ export default function CommunityPage() {
               Share ideas, learn, and grow together with fellow developers
             </p>
           </div>
-          {activeTab === "ideas" ? (
-            <Button onClick={() => setIsAddIdeaOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Share Idea
-            </Button>
-          ) : (
-            <Button onClick={() => setIsShareResourceOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Share Resource
-            </Button>
-          )}
+          <Button onClick={handleShareClick} className="gap-2">
+            <Plus className="w-4 h-4" />
+            {activeTab === "ideas" ? "Share Idea" : "Share Resource"}
+          </Button>
         </div>
 
         {/* Main Content */}

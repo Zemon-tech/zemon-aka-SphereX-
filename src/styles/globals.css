@@ -15,7 +15,7 @@
 }
 
 .markdown-body hr {
-  @apply my-4 border-t border-border;
+  @apply my-8 border-t border-border;
 }
 
 .markdown-body details {
@@ -40,7 +40,7 @@
 
 /* Add these new styles */
 .markdown-body [align="center"] {
-  @apply text-center;
+  @apply flex flex-col items-center justify-center;
 }
 
 .markdown-body [align="center"] > * {
@@ -86,7 +86,6 @@
 .markdown-body img[src*="github-readme-stats"],
 .markdown-body img[src*="github-profile-trophy"] {
   @apply inline-block mx-1 my-0;
-  transform: translateZ(0);
 }
 
 .markdown-body table td[align="center"] {
@@ -105,51 +104,6 @@
   @apply text-xs text-muted-foreground;
 }
 
-/* Add these optimizations */
-.repo-page {
-  content-visibility: auto;
-  contain-intrinsic-size: 1000px;
-}
-
-.repo-stats {
-  view-transition-name: repo-stats;
-}
-
-.repo-header {
-  view-transition-name: repo-header;
-}
-
-/* Optimize animations */
-@media (prefers-reduced-motion: no-preference) {
-  .repo-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    will-change: transform, box-shadow;
-  }
-  
-  .repo-stats-card {
-    transition: box-shadow 0.2s ease;
-    will-change: box-shadow;
-  }
-}
-
-/* Add loading states */
-.loading-shimmer {
-  @apply relative overflow-hidden;
-}
-
-.loading-shimmer::after {
-  @apply absolute inset-0;
-  content: '';
-  animation: shimmer 1.5s infinite;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    transparent 100%
-  );
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+.markdown-body p {
+  @apply my-4;
 } 

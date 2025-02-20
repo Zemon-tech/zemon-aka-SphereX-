@@ -27,8 +27,6 @@ import ActivityTab from "@/components/repos/tabs/ActivityTab";
 import ContributorsTab from "@/components/repos/tabs/ContributorsTab";
 import DependenciesTab from "@/components/repos/tabs/DependenciesTab";
 import { getRepoDetails } from "@/lib/github";
-import RepoStats from "@/components/repos/RepoStats";
-import RepoHeader from "@/components/repos/RepoHeader";
 
 interface Repository {
   _id: string;
@@ -103,17 +101,9 @@ export default function RepoDetailPage() {
           const owner = githubUrlParts[githubUrlParts.length - 2];
           const repoName = githubUrlParts[githubUrlParts.length - 1];
           
-          // Fetch GitHub data with error handling
+          // Fetch GitHub data
           const githubData = await getRepoDetails(owner, repoName);
-          if (githubData) {
-            setGithubData(githubData);
-          } else {
-            toast({
-              title: "Warning",
-              description: "Some GitHub data might be limited or unavailable",
-              variant: "warning",
-            });
-          }
+          setGithubData(githubData);
         } else {
           throw new Error(data.message || 'Failed to fetch repository details');
         }
@@ -165,43 +155,78 @@ export default function RepoDetailPage() {
   }
 
   return (
-    <PageContainer className="py-8 space-y-6">
-      {/* Header */}
-      <RepoHeader
-        name={repo?.name || ''}
-        description={repo?.description || ''}
-        avatar={repo?.avatar || '/Z.jpg'}
-        githubUrl={repo?.github_url || ''}
-        isStarred={false}
-      />
+    <PageContainer className="py-8">
+      {/* Header Section */}
+      <div className="flex flex-col gap-6 mb-8">
+        <Link
+          href="/repos"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft size={20} />
+          Back to Repositories
+        </Link>
 
-      {/* Stats */}
-      <RepoStats
-        stats={{
-          stars: githubData?.repoData?.stargazers_count || 0,
-          forks: githubData?.repoData?.forks_count || 0,
-          watchers: githubData?.repoData?.subscribers_count || 0,
-          issues: githubData?.repoData?.open_issues_count || 0,
-          pullRequests: githubData?.pullRequests?.length || 0,
-          contributors: githubData?.contributors?.length || 0,
-        }}
-      />
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center">
+              <img
+                src={repo.avatar || "/Z.jpg"}
+                alt={repo.name}
+                className="h-12 w-12"
+              />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">{repo.name}</h1>
+              <p className="text-muted-foreground">{repo.description}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" asChild>
+              <a href={repo.github_url} target="_blank" rel="noopener noreferrer">
+                <Github className="w-4 h-4 mr-2" />
+                View on GitHub
+              </a>
+            </Button>
+            <Button size="sm">
+              <Star className="w-4 h-4 mr-2" />
+              Star
+            </Button>
+          </div>
+        </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-card border">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-primary/10">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="data-[state=active]:bg-primary/10">
-            Activity
-          </TabsTrigger>
-          <TabsTrigger value="contributors" className="data-[state=active]:bg-primary/10">
-            Contributors
-          </TabsTrigger>
-          <TabsTrigger value="dependencies" className="data-[state=active]:bg-primary/10">
-            Dependencies
-          </TabsTrigger>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-4 gap-4">
+          <StatCard
+            title="Stars"
+            value={repo.stars}
+            icon={<Star className="w-4 h-4 text-yellow-500" />}
+          />
+          <StatCard
+            title="Forks"
+            value={repo.forks}
+            icon={<GitFork className="w-4 h-4" />}
+          />
+          <StatCard
+            title="Open Issues"
+            value={repo.openIssues}
+            icon={<AlertCircle className="w-4 h-4" />}
+          />
+          <StatCard
+            title="Pull Requests"
+            value={repo.pullRequests}
+            icon={<GitPullRequest className="w-4 h-4" />}
+          />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="contributors">Contributors</TabsTrigger>
+          <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">

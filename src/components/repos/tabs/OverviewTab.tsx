@@ -24,23 +24,15 @@ interface OverviewTabProps {
 }
 
 export default function OverviewTab({ readme, languages, branches, lastCommits, repoInfo }: OverviewTabProps) {
-  // Function to handle repository image paths
   const getImagePath = (src: string) => {
     if (!src) return '';
     if (src.startsWith('http')) return src;
     
-    // Check if we have the required repo info
-    if (!repoInfo?.owner || !repoInfo?.name || !repoInfo?.defaultBranch) {
-      return src; // Return original source if we don't have repo info
-    }
-    
-    // Remove leading slashes or ./ from the path
+    // Handle relative paths
     const cleanPath = src.replace(/^[./]+/, '');
-    
     return `https://raw.githubusercontent.com/${repoInfo.owner}/${repoInfo.name}/${repoInfo.defaultBranch}/${cleanPath}`;
   };
 
-  // Memoize the markdown content with proper dependency tracking
   const markdownContent = useMemo(() => (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -144,26 +136,25 @@ export default function OverviewTab({ readme, languages, branches, lastCommits, 
           if (!src) return null;
           
           const imageSrc = getImagePath(src);
-          if (!imageSrc) return null;
-          
-          const width = props.width;
+          const isShield = src.includes('shields.io') || 
+                          src.includes('github-readme-stats') ||
+                          src.includes('github-profile-trophy');
           
           return (
-            <div className="relative">
+            <span className={isShield ? 'inline-block mx-1' : 'block my-4'}>
               <img 
                 src={imageSrc}
-                className={`inline-block rounded-lg border my-4 ${
-                  width ? '' : 'max-w-full'
+                className={`${
+                  isShield ? '' : 'rounded-lg border max-w-full'
                 }`}
-                style={width ? { width: Number(width) || 'auto' } : {}}
                 loading="lazy"
                 onError={(e) => {
-                  // Fallback for failed images
+                  console.warn('Image failed to load:', imageSrc);
                   e.currentTarget.style.display = 'none';
                 }}
                 {...props} 
               />
-            </div>
+            </span>
           );
         },
         table: ({node, ...props}) => (
@@ -193,7 +184,7 @@ export default function OverviewTab({ readme, languages, branches, lastCommits, 
           return (
             <div 
               className={`${className || ''} ${
-                align === 'center' ? 'text-center' : ''
+                align === 'center' ? 'text-center flex flex-col items-center' : ''
               }`}
               {...props}
             >
@@ -208,7 +199,7 @@ export default function OverviewTab({ readme, languages, branches, lastCommits, 
     >
       {readme || "No README available"}
     </ReactMarkdown>
-  ), [readme, repoInfo?.owner, repoInfo?.name, repoInfo?.defaultBranch]); // Proper dependency array
+  ), [readme, repoInfo]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

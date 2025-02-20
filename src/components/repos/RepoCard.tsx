@@ -1,12 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Star, GitFork, Eye, Edit2, Trash2 } from "lucide-react";
+import { Star, GitFork, Eye, GitBranch, Code, MessageCircle, GitPullRequest } from "lucide-react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 interface RepoCardProps {
   repo: {
-    id: number;
+    id: string;
     name: string;
     owner: string;
     description: string;
@@ -15,79 +17,88 @@ interface RepoCardProps {
     watchers: number;
     language: string;
     topics: string[];
+    openIssues: number;
+    pullRequests: number;
+    lastUpdated: string;
   };
-  onEdit?: () => void;
-  onDelete?: () => void;
 }
 
-export default function RepoCard({ repo, onEdit, onDelete }: RepoCardProps) {
+export default function RepoCard({ repo }: RepoCardProps) {
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative rounded-lg border bg-card p-6 hover:shadow-lg transition-shadow"
+      className="group rounded-xl border bg-card p-6 hover:shadow-lg transition-all duration-300"
     >
-      {/* Admin Actions */}
-      {(onEdit || onDelete) && (
-        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          {onEdit && (
-            <button
-              onClick={onEdit}
-              className="p-2 rounded-full bg-background/80 hover:bg-background border shadow-sm"
-              title="Edit"
-            >
-              <Edit2 size={16} />
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={onDelete}
-              className="p-2 rounded-full bg-background/80 hover:bg-background border shadow-sm text-destructive"
-              title="Delete"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
+      <Link href={`/repos/${repo.id}`} className="block">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold group-hover:text-primary transition-colors">
+              {repo.name}
+            </h2>
+            <p className="text-sm text-muted-foreground">{repo.owner}</p>
+          </div>
+          <Badge variant="outline" className="text-xs">
+            {repo.language}
+          </Badge>
         </div>
-      )}
 
-      <Link href={`/repos/${repo.id}`}>
-        <h2 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
-          {repo.owner}/{repo.name}
-        </h2>
-        
         <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
           {repo.description}
         </p>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          {repo.topics.map((topic) => (
-            <span
-              key={topic}
-              className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium"
-            >
-              {topic}
-            </span>
-          ))}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Open Issues</span>
+              <span className="font-medium">{repo.openIssues}</span>
+            </div>
+            <Progress value={Math.min((repo.openIssues / 100) * 100, 100)} className="h-1" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Pull Requests</span>
+              <span className="font-medium">{repo.pullRequests}</span>
+            </div>
+            <Progress value={Math.min((repo.pullRequests / 50) * 100, 100)} className="h-1" />
+          </div>
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Star size={16} className="text-yellow-500" />
-            <span>{repo.stars}</span>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {repo.topics.slice(0, 4).map((topic) => (
+            <Badge
+              key={topic}
+              variant="secondary"
+              className="bg-primary/10 hover:bg-primary/20 transition-colors"
+            >
+              {topic}
+            </Badge>
+          ))}
+          {repo.topics.length > 4 && (
+            <Badge variant="outline" className="text-muted-foreground">
+              +{repo.topics.length - 4} more
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-4 text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Star className="w-4 h-4 text-yellow-500" />
+              <span>{repo.stars}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <GitFork className="w-4 h-4" />
+              <span>{repo.forks}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="w-4 h-4" />
+              <span>{repo.watchers}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <GitFork size={16} />
-            <span>{repo.forks}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Eye size={16} />
-            <span>{repo.watchers}</span>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-primary" />
-            <span>{repo.language}</span>
-          </div>
+          <time className="text-xs text-muted-foreground">
+            Updated {new Date(repo.lastUpdated).toLocaleDateString()}
+          </time>
         </div>
       </Link>
     </motion.article>

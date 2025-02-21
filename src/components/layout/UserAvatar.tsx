@@ -3,16 +3,20 @@
 import { ChevronDown, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 
 interface UserAvatarProps {
   user: {
     name: string;
+    email: string;
     avatar?: string;
   };
   onLogout: () => void;
+  showDashboard?: boolean;
 }
 
-export default function UserAvatar({ user, onLogout }: UserAvatarProps) {
+export default function UserAvatar({ user, onLogout, showDashboard }: UserAvatarProps) {
   const router = useRouter();
   const { toast } = useToast();
 
@@ -49,39 +53,50 @@ export default function UserAvatar({ user, onLogout }: UserAvatarProps) {
   };
 
   return (
-    <div className="relative group">
-      <div className="flex items-center gap-2 cursor-pointer">
-        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium overflow-hidden">
-          {user.avatar ? (
-            <img 
-              src={user.avatar} 
-              alt={user.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.textContent = getInitials(user.name);
-              }}
-            />
-          ) : (
-            getInitials(user.name)
-          )}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <div className="relative group">
+          <div className="flex items-center gap-2 cursor-pointer">
+            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium overflow-hidden">
+              {user.avatar ? (
+                <img 
+                  src={user.avatar} 
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.textContent = getInitials(user.name);
+                  }}
+                />
+              ) : (
+                getInitials(user.name)
+              )}
+            </div>
+            <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </div>
         </div>
-        <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-      </div>
-
-      {/* Dropdown */}
-      <div className="absolute right-0 mt-2 w-48 py-2 bg-card border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-        <div className="px-4 py-2 border-b">
-          <p className="text-sm font-medium">{user.name}</p>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="w-full px-4 py-2 text-sm text-left text-destructive hover:bg-accent flex items-center gap-2 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </button>
-      </div>
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {showDashboard && (
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem asChild>
+          <Link href="/settings">Settings</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleLogout}>
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 } 

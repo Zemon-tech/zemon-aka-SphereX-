@@ -28,6 +28,20 @@ import ContributorsTab from "@/components/repos/tabs/ContributorsTab";
 import DependenciesTab from "@/components/repos/tabs/DependenciesTab";
 import { getRepoDetails } from "@/lib/github";
 
+interface StatCardProps {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+}
+
+interface Contributor {
+  login: string;
+  avatar_url: string;
+  contributions: number;
+  pullRequests: number;
+  reviews: number;
+}
+
 interface Repository {
   _id: string;
   name: string;
@@ -252,7 +266,11 @@ export default function RepoDetailPage() {
 
         <TabsContent value="contributors" className="space-y-4">
           <ContributorsTab
-            contributors={repo.contributors || []}
+            contributors={repo.contributors?.map(c => ({
+              ...c,
+              pullRequests: 0,
+              reviews: 0
+            })) || []}
             totalContributions={repo.contributors?.reduce((acc, curr) => acc + curr.contributions, 0) || 0}
           />
         </TabsContent>
@@ -267,8 +285,7 @@ export default function RepoDetailPage() {
   );
 }
 
-// Helper component for stats
-function StatCard({ title, value, icon }) {
+function StatCard({ title, value, icon }: StatCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

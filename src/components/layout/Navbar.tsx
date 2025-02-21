@@ -8,6 +8,7 @@ import { Menu, X, LogIn } from "lucide-react";
 import UserAvatar from "./UserAvatar";
 
 interface User {
+  _id: string;
   name: string;
   email: string;
   avatar?: string;
@@ -22,7 +23,9 @@ export default function Navbar() {
   useEffect(() => {
     setIsClient(true);
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const token = localStorage.getItem('token');
+    
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
     }
 
@@ -42,6 +45,7 @@ export default function Navbar() {
     localStorage.removeItem('user');
     const event = new CustomEvent('auth-state-change', { detail: null });
     window.dispatchEvent(event);
+    window.location.href = '/';
   };
 
   const navItems = [
@@ -79,7 +83,11 @@ export default function Navbar() {
               </Link>
             ))}
             {isClient && (user ? (
-              <UserAvatar user={user} onLogout={handleLogout} />
+              <UserAvatar 
+                user={user} 
+                onLogout={handleLogout}
+                showDashboard={true}
+              />
             ) : (
               <Link
                 href="/login"
@@ -121,7 +129,11 @@ export default function Navbar() {
               ))}
               {user ? (
                 <div className="px-4">
-                  <UserAvatar user={user} onLogout={handleLogout} />
+                  <UserAvatar 
+                    user={user} 
+                    onLogout={handleLogout}
+                    showDashboard={true}
+                  />
                 </div>
               ) : (
                 <Link

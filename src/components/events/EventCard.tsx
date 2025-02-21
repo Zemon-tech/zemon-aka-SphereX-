@@ -60,7 +60,6 @@ export default function EventCard({ event, onEdit, onDelete }: EventCardProps) {
             alt={event.title}
             className="w-full h-full object-cover transition-transform group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
         </div>
         
         <div className="p-4">

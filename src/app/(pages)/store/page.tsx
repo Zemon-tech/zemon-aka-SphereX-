@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import ToolForm from "@/components/store/ToolForm";
 import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 interface StoreItem {
   _id: string;
@@ -38,6 +39,7 @@ export default function StorePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
   const { toast } = useToast();
+  const router = useRouter();
 
   const filterOptions = [
     { label: "All Categories", value: "all" },
@@ -152,6 +154,21 @@ export default function StorePage() {
     }
   };
 
+  const handleSubmitToolClick = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit a tool.",
+        variant: "destructive",
+      });
+      router.push('/login');
+      return;
+    }
+    
+    setShowAddForm(true);
+  };
+
   const filteredItems = storeItems.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,7 +186,7 @@ export default function StorePage() {
             Discover and integrate powerful developer tools
           </p>
         </div>
-        <Button onClick={() => setShowAddForm(true)} className="gap-2">
+        <Button onClick={handleSubmitToolClick} className="gap-2">
           <Plus className="w-4 h-4" />
           Submit Tool
         </Button>

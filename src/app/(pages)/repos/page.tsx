@@ -112,13 +112,28 @@ export default function ReposPage() {
     e.stopPropagation(); // Prevent card click when clicking GitHub link
   };
 
+  const handleAddProjectClick = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to add a project.",
+        variant: "destructive",
+      });
+      router.push('/login');
+      return;
+    }
+    
+    setShowAddForm(true);
+  };
+
   return (
     <PageContainer className="py-6">
       <PageHeader
         title="Open Source Projects"
         description="Explore and contribute to amazing open source projects"
         action={
-          <Button className="gap-2" onClick={() => setShowAddForm(true)}>
+          <Button className="gap-2" onClick={handleAddProjectClick}>
             <Plus className="w-4 h-4" />
             Add Project
           </Button>

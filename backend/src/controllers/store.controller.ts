@@ -32,6 +32,7 @@ export const getAllStoreItems = async (req: Request, res: Response, next: NextFu
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .populate('author', 'name')
       .lean();
 
     const total = await StoreItem.countDocuments(query);
@@ -66,7 +67,9 @@ export const getStoreItemDetails = async (req: Request, res: Response, next: Nex
       return res.json({ success: true, data: cachedData });
     }
 
-    const item = await StoreItem.findById(id).lean();
+    const item = await StoreItem.findById(id)
+      .populate('author', 'name')
+      .lean();
 
     if (!item) {
       throw new AppError('Store item not found', 404);
@@ -88,14 +91,16 @@ export const addStoreItem = async (req: Request, res: Response, next: NextFuncti
   try {
     const newItem = await StoreItem.create({
       ...req.body,
-      author_name: 'Anonymous',
-      status: 'approved',
+      status: 'approved'
     });
+
+    // Populate the author field
+    const populatedItem = await newItem.populate('author', 'name');
 
     // Clear list cache
     await clearCache('store:*');
 
-    res.status(201).json({ success: true, data: newItem });
+    res.status(201).json({ success: true, data: populatedItem });
   } catch (error) {
     logger.error('Error in addStoreItem:', error);
     next(error);

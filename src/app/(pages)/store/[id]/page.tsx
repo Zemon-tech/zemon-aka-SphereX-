@@ -24,9 +24,11 @@ interface ToolDetails {
   price: string;
   average_rating: number;
   total_reviews: number;
-  developer_name: string;
-  developer_avatar?: string;
-  developer_company?: string;
+  author: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
   version?: string;
   lastUpdated?: string;
   screenshots?: string[];
@@ -132,7 +134,7 @@ export default function ToolDetailsPage() {
               <div>
                 <h1 className="text-4xl font-bold">{tool.name}</h1>
                 <p className="text-lg text-muted-foreground mt-2">
-                  by {tool.developer_name || 'Unknown Developer'}
+                  by {tool.author?.name || 'Unknown Developer'}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -275,20 +277,15 @@ export default function ToolDetailsPage() {
             <div className="bg-card border rounded-xl p-8">
               <div className="flex items-center gap-6 mb-8">
                 <Avatar className="w-20 h-20">
-                  <AvatarImage src={tool.developer_avatar} />
+                  <AvatarImage src={tool.author?.avatar} />
                   <AvatarFallback>
-                    {(tool.developer_name || 'Unknown').charAt(0)}
+                    {tool.author?.name?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <h2 className="text-2xl font-semibold">
-                    {tool.developer_name || 'Unknown Developer'}
+                    {tool.author?.name || 'Unknown Developer'}
                   </h2>
-                  {tool.developer_company && (
-                    <p className="text-muted-foreground">
-                      {tool.developer_company}
-                    </p>
-                  )}
                 </div>
               </div>
 

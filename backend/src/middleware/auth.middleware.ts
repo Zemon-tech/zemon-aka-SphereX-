@@ -5,6 +5,7 @@ import { config } from '../config/config';
 export interface AuthRequest extends Request {
   user?: {
     id: string;
+    name: string;
     role: string;
   };
 }
@@ -22,10 +23,10 @@ export const auth = async (
     }
 
     const decoded = jwt.verify(token, config.jwtSecret);
-    req.user = decoded as { id: string; role: string };
+    req.user = decoded as { id: string; name: string; role: string };
     next();
   } catch (error) {
-    res.status(401).json({ error: 'Please authenticate.' });
+    res.status(401).json({ success: false, message: 'Please authenticate' });
   }
 };
 

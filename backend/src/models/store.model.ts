@@ -58,9 +58,10 @@ const storeItemSchema = new Schema({
     type: String,
     default: 'Free'
   },
-  author_name: {
-    type: String,
-    default: 'Anonymous'
+  author: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   reviews: [reviewSchema],
   average_rating: {

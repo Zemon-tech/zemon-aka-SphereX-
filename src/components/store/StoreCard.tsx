@@ -11,7 +11,10 @@ interface StoreCardProps {
     title: string;
     description: string;
     image: string;
-    developer: string;
+    developer: {
+      _id: string;
+      name: string;
+    } | null;
     url: string;
   };
 }
@@ -21,6 +24,9 @@ export default function StoreCard({ tool }: StoreCardProps) {
     e.preventDefault();
     window.open(tool.url, '_blank', 'noopener,noreferrer');
   };
+
+  // Get developer name safely
+  const developerName = tool.developer?.name || 'Unknown Developer';
 
   // Get first 3 words of description
   const shortDescription = tool.description
@@ -54,7 +60,7 @@ export default function StoreCard({ tool }: StoreCardProps) {
                   {tool.title}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  by {tool.developer}
+                  by {developerName}
                 </p>
               </div>
             </div>

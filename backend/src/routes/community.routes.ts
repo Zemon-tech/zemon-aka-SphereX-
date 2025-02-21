@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import Idea from '../models/idea.model';
+import Idea, { IComment } from '../models/idea.model';
 import Resource, { ResourceType } from '../models/resource.model';
 import { auth } from '../middleware/auth.middleware';
 import { AuthRequest } from '../middleware/auth.middleware';
@@ -13,6 +13,7 @@ router.get('/ideas', async (req: Request, res: Response) => {
     console.log('Attempting to fetch ideas from MongoDB...');
     const ideas = await Idea.find()
       .populate('author', 'name')
+      .populate('comments.userId', 'name avatar')
       .sort({ createdAt: -1 })
       .lean();
     
@@ -178,6 +179,53 @@ router.post('/resources', auth, async (req: AuthRequest, res: Response) => {
     res.status(500).json({ 
       message: 'Error creating resource',
       error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/ideas/:id/comments', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+    
+    if (!text?.trim()) {
+      return res.status(400).json({ message: 'Comment text is required' });
+    }
+
+    // Validate the idea ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid idea ID format' });
+    }
+
+    const idea = await Idea.findById(id);
+    if (!idea) {
+      return res.status(404).json({ message: 'Idea not found' });
+    }
+
+    if (!req.user?.id || !req.user?.name) {
+      return res.status(401).json({ message: 'User information is missing' });
+    }
+
+    const comment = {
+      userId: new mongoose.Types.ObjectId(req.user.id),
+      username: req.user.name,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(req.user.name)}&background=random`,
+      text: text.trim(),
+      createdAt: new Date()
+    };
+
+    idea.comments.push(comment);
+    await idea.save();
+
+    res.status(201).json({ 
+      success: true,
+      data: comment 
+    });
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to add comment' 
     });
   }
 });

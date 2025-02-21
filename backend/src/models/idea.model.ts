@@ -1,12 +1,46 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+// Export the interface
+export interface IComment {
+  userId: mongoose.Types.ObjectId;
+  username: string;
+  avatar: string;
+  text: string;
+  createdAt: Date;
+}
+
 export interface IIdea extends Document {
   title: string;
   description: string;
-  author: Schema.Types.ObjectId;
+  author: mongoose.Types.ObjectId;
+  comments: IComment[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const commentSchema = new Schema({
+  userId: { 
+    type: Schema.Types.ObjectId, 
+    ref: "User", 
+    required: true 
+  },
+  username: { 
+    type: String, 
+    required: true 
+  },
+  avatar: { 
+    type: String,
+    required: true
+  },
+  text: { 
+    type: String, 
+    required: true 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
 
 const IdeaSchema = new Schema({
   title: {
@@ -27,6 +61,7 @@ const IdeaSchema = new Schema({
     required: [true, 'Author is required'],
     index: true
   },
+  comments: [commentSchema],
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

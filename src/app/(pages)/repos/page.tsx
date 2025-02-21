@@ -32,8 +32,6 @@ export default function ReposPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [repos, setRepos] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchValue, setSearchValue] = useState("");
-  const [filterValue, setFilterValue] = useState("all");
   const { toast } = useToast();
 
   const filterOptions = [
@@ -129,14 +127,6 @@ export default function ReposPage() {
     setShowAddForm(true);
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearchValue(value);
-  };
-
-  const handleFilterChange = (value: string) => {
-    setFilterValue(value);
-  };
-
   return (
     <PageContainer className="py-6">
       <PageHeader
@@ -151,10 +141,30 @@ export default function ReposPage() {
       />
 
       <SearchAndFilter
-        searchQuery={searchValue}
-        onSearchChange={handleSearchChange}
-        selectedCategory={filterValue}
-        onCategoryChange={handleFilterChange}
+        searchPlaceholder="Search repositories..."
+        searchValue=""
+        onSearchChange={() => {}}
+        filterValue="all"
+        onFilterChange={() => {}}
+        filterOptions={filterOptions}
+        extraActions={
+          <div className="flex gap-2">
+            <select className="px-4 py-2.5 rounded-lg border bg-background">
+              <option value="stars">Most Stars</option>
+              <option value="forks">Most Forks</option>
+              <option value="recent">Recently Added</option>
+              <option value="updated">Recently Updated</option>
+            </select>
+            <Button variant="outline" className="gap-2">
+              <GitBranch className="w-4 h-4" />
+              Fork Stats
+            </Button>
+            <Button variant="outline" className="gap-2">
+              <Star className="w-4 h-4" />
+              Star History
+            </Button>
+          </div>
+        }
       />
 
       {/* Repositories Grid */}

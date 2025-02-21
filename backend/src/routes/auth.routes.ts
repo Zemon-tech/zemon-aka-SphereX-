@@ -1,10 +1,12 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config';
 import User from '../models/user.model';
 import { AppError } from '../utils/errors';
 import { setCache, getCache, deleteCache } from '../utils/redis';
 import logger from '../utils/logger';
+import { auth } from '../middleware/auth.middleware';
+import { AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
 const CACHE_EXPIRATION = 3600; // 1 hour
@@ -27,9 +29,13 @@ router.post('/signup', async (req, res, next) => {
       password
     });
 
-    // Generate token
+    // Generate token with all required fields
     const token = jwt.sign(
-      { id: user._id },
+      { 
+        id: user._id,
+        name: user.name,
+        role: user.role || 'user'
+      },
       config.jwtSecret,
       { expiresIn: '7d' }
     );
@@ -73,9 +79,13 @@ router.post('/login', async (req, res, next) => {
       throw new AppError('Invalid credentials', 401);
     }
 
-    // Generate token
+    // Generate token with name included
     const token = jwt.sign(
-      { id: user._id },
+      { 
+        id: user._id,
+        name: user.name,  // Include name in token
+        role: user.role 
+      },
       config.jwtSecret,
       { expiresIn: '7d' }
     );
@@ -168,6 +178,29 @@ router.post('/logout', async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+router.get('/verify', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    // If middleware passed, token is valid
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid token' 
+      });
+    }
+
+    res.json({ 
+      success: true,
+      user: req.user 
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(401).json({ 
+      success: false,
+      message: 'Invalid token' 
+    });
   }
 });
 

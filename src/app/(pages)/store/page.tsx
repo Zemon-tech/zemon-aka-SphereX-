@@ -27,10 +27,7 @@ interface StoreItem {
   price: string;
   average_rating: number;
   total_reviews: number;
-  author: {
-    _id: string;
-    name: string;
-  };
+  developer_name?: string;
   version?: string;
   lastUpdated?: string;
 }
@@ -85,11 +82,6 @@ export default function StorePage() {
     try {
       setIsLoading(true);
       
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Please log in to submit a tool');
-      }
-
       // Get tags and clean them up
       const tagsString = formData.get('tags')?.toString() || '';
       const tags = tagsString
@@ -106,7 +98,7 @@ export default function StorePage() {
         github_url: formData.get('githubUrl')?.toString() || undefined,
         category: formData.get('category')?.toString(),
         price: formData.get('price')?.toString() || 'Free',
-        tags: tags.length > 0 ? tags : ['uncategorized']
+        tags: tags.length > 0 ? tags : ['uncategorized'],
       };
 
       // Debug log
@@ -121,16 +113,11 @@ export default function StorePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(toolData),
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to add tool');
-      }
 
       if (data.success) {
         toast({
@@ -151,10 +138,8 @@ export default function StorePage() {
             description: data.errors.join('\n'),
             variant: "destructive",
           });
-        } else if (data.message) {
-          throw new Error(data.message);
         } else {
-          throw new Error('Failed to add tool');
+          throw new Error(data.message || 'Failed to add tool');
         }
       }
     } catch (error) {
@@ -247,7 +232,7 @@ export default function StorePage() {
                   title: item.name,
                   description: item.description,
                   image: item.thumbnail,
-                  developer: item.author || null,
+                  developer: item.developer_name || 'Unknown Developer',
                   url: item.url,
                 }}
               />

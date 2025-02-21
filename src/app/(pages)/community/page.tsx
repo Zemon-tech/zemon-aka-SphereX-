@@ -15,6 +15,15 @@ import axios from "axios";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 
+interface Comment {
+  _id: string;
+  userId: string;
+  username: string;
+  avatar: string;
+  text: string;
+  createdAt: string;
+}
+
 interface Idea {
   _id: string;
   title: string;
@@ -24,6 +33,7 @@ interface Idea {
     name: string;
   } | null;
   createdAt: string;
+  comments: Comment[];
 }
 
 export default function CommunityPage() {
@@ -87,6 +97,10 @@ export default function CommunityPage() {
     idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     idea.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleIdeaRefresh = async () => {
+    await fetchIdeas(); // Re-fetch all ideas to get the updated comments
+  };
 
   return (
     <PageContainer>
@@ -156,9 +170,11 @@ export default function CommunityPage() {
                         title: idea.title,
                         description: idea.description,
                         author: idea.author || null,
+                        comments: idea.comments || [],
                         createdAt: idea.createdAt,
                       }}
                       onDelete={fetchIdeas}
+                      onRefresh={handleIdeaRefresh}
                     />
                   </motion.div>
                 ))

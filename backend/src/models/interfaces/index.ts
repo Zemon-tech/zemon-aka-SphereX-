@@ -25,6 +25,7 @@ export interface IStoreItem extends Document {
   name: string;
   description: string;
   thumbnail: string;
+  images: string[];
   url: string;
   dev_docs?: string;
   github_url?: string;

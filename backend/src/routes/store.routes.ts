@@ -9,6 +9,10 @@ import {
 import { validateStoreItem, validateReview } from '../validators/store.validator';
 import { auth } from '../middleware/auth.middleware';
 import { AuthRequest } from '../middleware/auth.middleware';
+import Store from '../models/store.model';
+import { AppError } from '../utils/errors';
+import { Types } from 'mongoose';
+import { clearCache } from '../utils/redis';
 
 const router = Router();
 
@@ -58,5 +62,47 @@ router.get('/:id', getStoreItemDetails);
 router.post('/', auth, validateStoreItemMiddleware, addStoreItem);
 router.post('/:id/review', auth, validateReviewMiddleware, addReview);
 router.delete('/:id', auth, deleteStoreItem);
+
+// Add images to tool
+router.put('/:id/images', auth, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const { imageUrl } = req.body;
+
+    if (!Types.ObjectId.isValid(id)) {
+      throw new AppError('Invalid tool ID', 400);
+    }
+
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      throw new AppError('Image URL is required', 400);
+    }
+
+    const tool = await Store.findById(id);
+    if (!tool) {
+      throw new AppError('Tool not found', 404);
+    }
+
+    // Check if user is the author
+    if (tool.author.toString() !== req.user?.id) {
+      throw new AppError('Not authorized to modify this tool', 403);
+    }
+
+    // Add the new image URL to the images array
+    tool.images = tool.images || [];
+    tool.images.push(imageUrl);
+    await tool.save();
+
+    // Clear cache
+    await clearCache(`store:${id}`);
+    await clearCache('store:*');
+
+    res.json({ 
+      success: true, 
+      data: tool 
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router; 

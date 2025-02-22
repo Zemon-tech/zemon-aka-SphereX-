@@ -35,6 +35,10 @@ const storeItemSchema = new Schema({
     type: String,
     required: true
   },
+  images: [{
+    type: String,
+    trim: true
+  }],
   url: {
     type: String,
     required: true

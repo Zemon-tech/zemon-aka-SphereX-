@@ -11,6 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import RatingForm from "@/components/store/RatingForm";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { Input } from "@/components/ui/input";
+import { API_BASE_URL } from "@/lib/api";
 
 interface ToolDetails {
   _id: string;
@@ -33,6 +42,7 @@ interface ToolDetails {
   version?: string;
   lastUpdated?: string;
   screenshots?: string[];
+  images: string[];
   reviews?: Array<{
     user_name: string;
     rating: number;
@@ -48,6 +58,9 @@ export default function ToolDetailsPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
   const [userReview, setUserReview] = useState<{ rating: number; comment: string; } | null>(null);
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [isAddingImage, setIsAddingImage] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.id) {
@@ -80,6 +93,19 @@ export default function ToolDetailsPage() {
     }
   }, [tool]);
 
+  useEffect(() => {
+    // Get current user ID from token
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        setCurrentUserId(tokenData.id);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
+
   const fetchStoreItem = async () => {
     try {
       setIsLoading(true);
@@ -99,6 +125,51 @@ export default function ToolDetailsPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAddImage = async () => {
+    try {
+      setIsAddingImage(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please log in to add images');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/store/${tool?._id}/images`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ imageUrl: newImageUrl }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add image');
+      }
+
+      // Update local state
+      setTool(prevTool => ({
+        ...prevTool!,
+        images: [...(prevTool?.images || []), newImageUrl],
+      }));
+
+      setNewImageUrl('');
+      toast({
+        title: "Success",
+        description: "Image added successfully",
+      });
+    } catch (error) {
+      console.error('Error adding image:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to add image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingImage(false);
     }
   };
 
@@ -234,22 +305,53 @@ export default function ToolDetailsPage() {
               </p>
             </div>
 
-            {/* Screenshots */}
-            {Array.isArray(tool.screenshots) && tool.screenshots.length > 0 && (
-              <div>
-                <h2 className="text-2xl font-semibold mb-6">Screenshots</h2>
-                <div className="grid grid-cols-2 gap-6">
-                  {tool.screenshots.map((screenshot, index) => (
-                    <img
-                      key={index}
-                      src={screenshot}
-                      alt={`${tool.name} screenshot ${index + 1}`}
-                      className="rounded-xl shadow-lg w-full h-auto hover:scale-[1.02] transition-transform cursor-pointer"
+            {/* Images Section */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold">Images</h2>
+                {currentUserId === tool.author._id && (
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="url"
+                      placeholder="Enter image URL"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      className="w-80"
                     />
-                  ))}
-                </div>
+                    <Button 
+                      onClick={handleAddImage}
+                      disabled={!newImageUrl || isAddingImage}
+                    >
+                      {isAddingImage ? "Adding..." : "Add Image"}
+                    </Button>
+                  </div>
+                )}
               </div>
-            )}
+
+              {tool.images && tool.images.length > 0 ? (
+                <Carousel className="w-full max-w-4xl mx-auto">
+                  <CarouselContent>
+                    {tool.images.map((image, index) => (
+                      <CarouselItem key={index}>
+                        <div className="aspect-video w-full overflow-hidden rounded-xl">
+                          <img
+                            src={image}
+                            alt={`${tool.name} screenshot ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious />
+                  <CarouselNext />
+                </Carousel>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground border rounded-xl">
+                  No images available
+                </div>
+              )}
+            </div>
 
             {/* Tags */}
             <div>

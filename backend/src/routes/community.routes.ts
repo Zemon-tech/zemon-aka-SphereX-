@@ -183,6 +183,44 @@ router.post('/resources', auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.delete('/resources/:id', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid resource ID' });
+    }
+
+    // Find the resource and check ownership
+    const resource = await Resource.findById(id);
+    
+    if (!resource) {
+      return res.status(404).json({ message: 'Resource not found' });
+    }
+
+    // Check if the user is the creator of the resource
+    if (resource.addedBy.toString() !== userId) {
+      return res.status(403).json({ message: 'You are not authorized to delete this resource' });
+    }
+
+    await Resource.findByIdAndDelete(id);
+    
+    console.log('Resource deleted successfully:', id);
+    res.json({ message: 'Resource deleted successfully' });
+  } catch (error) {
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    res.status(500).json({ 
+      message: 'Error deleting resource',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 router.post('/ideas/:id/comments', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;

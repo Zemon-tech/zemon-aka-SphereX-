@@ -38,6 +38,7 @@ interface Event {
   image: string;
   tags: string[];
   organizer: {
+    _id: string;
     name: string;
     avatar: string;
   };
@@ -98,10 +99,16 @@ export default function EventsPage() {
       const eventData = Object.fromEntries(formData);
       console.log('Submitting event data:', eventData);
 
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please log in to create an event');
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/events`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           ...eventData,
@@ -168,6 +175,40 @@ export default function EventsPage() {
     }
   };
 
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please log in to delete the event');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete event');
+      }
+
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+      });
+      fetchEvents();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete event",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <PageContainer className="py-6">
       <PageHeader
@@ -182,21 +223,18 @@ export default function EventsPage() {
       />
 
       <SearchAndFilter
-        searchPlaceholder="Search events..."
-        searchValue={searchValue}
+        searchQuery={searchValue}
         onSearchChange={setSearchValue}
-        filterValue={filterValue}
-        onFilterChange={setFilterValue}
-        filterOptions={filterOptions}
-        extraActions={
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2" onClick={handleExportExcel}>
-              <Download className="w-4 h-4" />
-              Export to Excel
-            </Button>
-          </div>
-        }
+        selectedCategory={filterValue}
+        onCategoryChange={setFilterValue}
       />
+
+      <div className="flex justify-end mt-4">
+        <Button variant="outline" className="gap-2" onClick={handleExportExcel}>
+          <Download className="w-4 h-4" />
+          Export
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {isLoading ? (
@@ -220,7 +258,9 @@ export default function EventsPage() {
                 rewards: event.rewards || "",
                 image: event.image || "/placeholder-event.jpg",
                 tags: event.tags,
+                organizer: event.organizer
               }}
+              onDelete={() => handleDeleteEvent(event._id)}
             />
           ))
         ) : (

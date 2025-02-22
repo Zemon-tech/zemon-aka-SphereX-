@@ -11,11 +11,15 @@ const router = Router();
 const CACHE_EXPIRATION = 3600; // 1 hour
 
 // Create event
-router.post('/', async (req, res, next) => {
+router.post('/', auth, async (req: AuthRequest, res, next) => {
   try {
+    if (!req.user?.id) {
+      throw new AppError('User not authenticated', 401);
+    }
+
     const eventData = {
       ...req.body,
-      organizer: '65d8c25a3d96b6c594ad7d3c', // Temporary static organizer ID
+      organizer: req.user.id,
       date: new Date(req.body.date),
       analytics: {
         dailyViews: [],
@@ -27,19 +31,15 @@ router.post('/', async (req, res, next) => {
 
     const event = await Event.create(eventData);
     
-    // Add default organizer data for response
-    const eventWithOrganizer = {
-      ...event.toObject(),
-      organizer: {
-        name: 'Event Organizer',
-        avatar: '/default-avatar.jpg'
-      }
-    };
+    // Populate organizer information
+    const populatedEvent = await Event.findById(event._id)
+      .populate('organizer', 'name avatar')
+      .lean();
 
     // Clear events list cache
     await deleteCache('events:list*');
     
-    res.status(201).json({ success: true, data: eventWithOrganizer });
+    res.status(201).json({ success: true, data: populatedEvent });
   } catch (error) {
     next(error);
   }

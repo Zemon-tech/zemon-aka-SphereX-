@@ -82,6 +82,12 @@ export default function StorePage() {
     try {
       setIsLoading(true);
       
+      // Get auth token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please log in to submit a tool');
+      }
+      
       // Get tags and clean them up
       const tagsString = formData.get('tags')?.toString() || '';
       const tags = tagsString
@@ -113,6 +119,7 @@ export default function StorePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Add authorization header
         },
         body: JSON.stringify(toolData),
       });
@@ -129,7 +136,7 @@ export default function StorePage() {
         fetchStoreItems();
       } else {
         // Log the error response
-        console.error('Server validation errors:', data);
+        console.error('Server validation errors:', data.errors);
         
         // If there are validation errors, show them in the toast
         if (data.errors && Array.isArray(data.errors)) {

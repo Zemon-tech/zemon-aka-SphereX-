@@ -7,6 +7,7 @@ import { setCache, getCache, deleteCache } from '../utils/redis';
 import logger from '../utils/logger';
 import { auth } from '../middleware/auth.middleware';
 import { AuthRequest } from '../middleware/auth.middleware';
+import crypto from 'crypto';
 
 const router = Router();
 const CACHE_EXPIRATION = 3600; // 1 hour
@@ -201,6 +202,72 @@ router.get('/verify', auth, async (req: AuthRequest, res: Response) => {
       success: false,
       message: 'Invalid token' 
     });
+  }
+});
+
+// GitHub sync endpoint
+router.post('/github/sync', async (req, res, next) => {
+  try {
+    const { name, email, avatar, github } = req.body;
+
+    if (!email || !name) {
+      throw new AppError('Email and name are required', 400);
+    }
+
+    // Find or create user
+    let user = await User.findOne({ email });
+    
+    if (user) {
+      // Update existing user with GitHub data
+      user.name = name;
+      user.avatar = avatar || user.avatar;
+      user.github = github;
+      await user.save();
+    } else {
+      // Create new user with GitHub data
+      // Generate a secure random password that meets the minimum length requirement
+      const randomPassword = crypto.randomBytes(16).toString('hex'); // 32 characters long
+      
+      user = await User.create({
+        name,
+        email,
+        avatar,
+        github,
+        password: randomPassword // This will be hashed by the pre-save middleware
+      });
+    }
+
+    // Generate token
+    const token = jwt.sign(
+      { 
+        id: user._id,
+        name: user.name,
+        role: user.role || 'user'
+      },
+      config.jwtSecret,
+      { expiresIn: '7d' }
+    );
+
+    // Cache user data
+    const userData = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      github: user.github,
+      role: user.role
+    };
+    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
+
+    res.json({
+      success: true,
+      data: {
+        token,
+        user: userData
+      }
+    });
+  } catch (error) {
+    next(error);
   }
 });
 

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config';
-import { User } from '../models/user.model';
+import  User  from '../models/user.model';
 import { ValidationError } from '../utils/errors';
 import { validationResult } from 'express-validator';
 

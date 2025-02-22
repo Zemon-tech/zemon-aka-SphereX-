@@ -232,7 +232,7 @@ export default function StorePage() {
                   title: item.name,
                   description: item.description,
                   image: item.thumbnail,
-                  developer: item.developer_name || 'Unknown Developer',
+                  developer: { _id: 'unknown', name: item.developer_name || 'Unknown Developer' },
                   url: item.url,
                 }}
               />

@@ -42,6 +42,7 @@ export default function StorePage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -56,6 +57,19 @@ export default function StorePage() {
     { label: "Security", value: "Security" },
     { label: "Database", value: "Database" },
   ];
+
+  useEffect(() => {
+    // Get current user ID from token
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        setCurrentUserId(tokenData.id);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchStoreItems();
@@ -246,6 +260,7 @@ export default function StorePage() {
                   developer: item.author || { _id: 'unknown', name: 'Unknown Developer' },
                   url: item.url,
                 }}
+                currentUserId={currentUserId}
                 onDelete={fetchStoreItems}
               />
             ))

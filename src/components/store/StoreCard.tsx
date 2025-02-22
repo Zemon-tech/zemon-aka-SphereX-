@@ -30,10 +30,11 @@ interface Tool {
 
 interface StoreCardProps {
   tool: Tool;
+  currentUserId: string | null;
   onDelete?: () => void;
 }
 
-export default function StoreCard({ tool, onDelete }: StoreCardProps) {
+export default function StoreCard({ tool, currentUserId, onDelete }: StoreCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
@@ -43,12 +44,33 @@ export default function StoreCard({ tool, onDelete }: StoreCardProps) {
     window.open(tool.url, '_blank', 'noopener,noreferrer');
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Check if user is the creator of the tool
+    if (currentUserId !== tool.developer._id) {
+      toast({
+        title: "Permission Denied",
+        description: "You are not authorized to delete this tool. Only the creator can delete it.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setShowDeleteDialog(true);
+  };
+
   const handleDelete = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Please log in to delete a tool');
+      }
+
+      // Double check permission before making the request
+      if (currentUserId !== tool.developer._id) {
+        throw new Error('You are not authorized to delete this tool');
       }
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store/${tool.id}`, {
@@ -136,17 +158,16 @@ export default function StoreCard({ tool, onDelete }: StoreCardProps) {
                 >
                   <ExternalLink className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowDeleteDialog(true);
-                  }}
-                  disabled={isLoading}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {currentUserId === tool.developer._id && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleDeleteClick}
+                    disabled={isLoading}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </div>
 

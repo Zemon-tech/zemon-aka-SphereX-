@@ -14,7 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import ProfileEditForm from "@/components/dashboard/ProfileEditForm";
 import GitHubStats from "@/components/dashboard/GitHubStats";
 import ProjectsList from "@/components/dashboard/ProjectsList";
 import ContributionGraph from "@/components/dashboard/ContributionGraph";
@@ -26,6 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LineChart, BarChart } from "@/components/charts";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useRouter } from "next/navigation";
 
 interface User {
   _id: string;
@@ -70,11 +70,11 @@ interface Repository {
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [githubData, setGithubData] = useState<GitHubData | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [repos, setRepos] = useState<Repository[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                     </a>
                   )}
                 </div>
-                <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+                <Button onClick={() => router.push('/settings')}>Edit Profile</Button>
               </div>
 
               <div className="flex items-center gap-6 mt-6">
@@ -318,18 +318,6 @@ export default function DashboardPage() {
           {/* Other tab contents remain similar but styled consistently */}
         </Tabs>
       </div>
-
-      {/* Edit Profile Modal */}
-      {isEditing && (
-        <ProfileEditForm 
-          user={user} 
-          onClose={() => setIsEditing(false)}
-          onUpdate={(updatedUser) => {
-            setUser(updatedUser);
-            setIsEditing(false);
-          }}
-        />
-      )}
     </PageContainer>
   );
 } 

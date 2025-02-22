@@ -43,6 +43,7 @@ export default function NewsDetailPage() {
   const [news, setNews] = useState<NewsDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [relatedNews, setRelatedNews] = useState<RelatedNews[]>([]);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     const fetchNewsDetail = async () => {
@@ -95,6 +96,38 @@ export default function NewsDetailPage() {
       fetchNewsDetail();
     }
   }, [params.id, toast]);
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setIsCopied(true);
+      toast({
+        title: "Success",
+        description: "Link copied to clipboard",
+      });
+      // Reset the copied state after 2 seconds
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTwitterShare = () => {
+    const shareUrl = window.location.href;
+    const shareText = news?.title || 'Check out this article';
+    const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+    window.open(twitterUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleLinkedInShare = () => {
+    const shareUrl = window.location.href;
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    window.open(linkedInUrl, '_blank', 'noopener,noreferrer');
+  };
 
   if (isLoading) {
     return (
@@ -228,17 +261,32 @@ export default function NewsDetailPage() {
           <div className="border-t pt-8">
             <h2 className="text-lg font-semibold mb-4">Share this article</h2>
             <div className="flex gap-3">
-              <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 hover:bg-primary/5"
+                onClick={handleTwitterShare}
+              >
                 <Twitter className="w-4 h-4" />
                 Twitter
               </Button>
-              <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 hover:bg-primary/5"
+                onClick={handleLinkedInShare}
+              >
                 <Linkedin className="w-4 h-4" />
                 LinkedIn
               </Button>
-              <Button variant="outline" size="sm" className="gap-2 hover:bg-primary/5">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 hover:bg-primary/5"
+                onClick={handleCopyLink}
+              >
                 <Link2 className="w-4 h-4" />
-                Copy Link
+                {isCopied ? "Copied!" : "Copy Link"}
               </Button>
             </div>
           </div>

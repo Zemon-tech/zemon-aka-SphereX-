@@ -27,9 +27,13 @@ interface StoreItem {
   price: string;
   average_rating: number;
   total_reviews: number;
-  developer_name?: string;
   version?: string;
   lastUpdated?: string;
+  author: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
 }
 
 export default function StorePage() {
@@ -239,7 +243,7 @@ export default function StorePage() {
                   title: item.name,
                   description: item.description,
                   image: item.thumbnail,
-                  developer: { _id: 'unknown', name: item.developer_name || 'Unknown Developer' },
+                  developer: item.author || { _id: 'unknown', name: 'Unknown Developer' },
                   url: item.url,
                 }}
                 onDelete={fetchStoreItems}

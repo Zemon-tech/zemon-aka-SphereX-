@@ -127,9 +127,15 @@ router.get('/me', async (req, res, next) => {
     // Try to get user from cache
     const cachedUser = await getCache(`user:${decoded.id}`);
     if (cachedUser) {
+      const userData = JSON.parse(cachedUser);
+      // Get fresh password from database for development
+      const user = await User.findById(decoded.id);
+      if (user) {
+        userData.password = user.password; // Include hashed password
+      }
       return res.json({
         success: true,
-        data: JSON.parse(cachedUser)
+        data: userData
       });
     }
 
@@ -144,11 +150,18 @@ router.get('/me', async (req, res, next) => {
       name: user.name,
       email: user.email,
       avatar: user.avatar,
-      role: user.role
+      role: user.role,
+      password: user.password, // Include hashed password
+      company: user.company,
+      github: user.github,
+      linkedin: user.linkedin,
+      personalWebsite: user.personalWebsite,
+      education: user.education
     };
 
-    // Cache user data
-    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
+    // Cache user data (without password)
+    const { password, ...cacheData } = userData;
+    await setCache(`user:${user._id}`, JSON.stringify(cacheData), CACHE_EXPIRATION);
 
     res.json({
       success: true,
@@ -314,7 +327,9 @@ router.put('/profile', auth, async (req: AuthRequest, res, next) => {
     }
 
     // Handle password update if provided
-    if (req.body.currentPassword && req.body.newPassword) {
+    if (req.body.newPassword) {
+      user.password = req.body.newPassword;
+    } else if (req.body.currentPassword && req.body.newPassword) {
       const isPasswordValid = await user.comparePassword(req.body.currentPassword);
       if (!isPasswordValid) {
         throw new AppError('Current password is incorrect', 401);

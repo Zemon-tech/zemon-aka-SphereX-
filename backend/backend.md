@@ -319,60 +319,161 @@ Export events data to Excel
 - Rate limiting for API endpoints
 - CORS configuration for security
 
-### Authentication Implementation
+## Authentication Implementation
 
-#### Overview
-Implemented a secure authentication system with MongoDB for storage and Redis for caching.
+### Overview
+Implemented a comprehensive authentication system with both traditional email/password and GitHub OAuth support, using MongoDB for storage and Redis for caching.
 
-#### Features Implemented
-1. User Model
-   - Created MongoDB schema for users with fields:
-     - Full Name (required)
-     - Email (unique, required)
-     - Password (hashed, required)
-     - Avatar (optional)
-     - Role (user/admin)
-     - Timestamps
+### Features Implemented
 
-2. Security Features
-   - Password hashing using bcryptjs
-   - JWT token generation for authentication
-   - Redis caching for user sessions
-   - Email uniqueness validation
-   - Password strength requirements
+1. User Model (`user.model.ts`)
+   - Basic fields: name, email, password (hashed), avatar
+   - Profile fields: company, role, education details
+   - Social links: GitHub, LinkedIn, personal website
+   - Password hashing using bcrypt
+   - Methods for password comparison
 
-3. API Endpoints
-   - POST `/api/auth/signup` - Create new user account
-   - POST `/api/auth/login` - Authenticate user
-   - GET `/api/auth/me` - Get current user details
-   - POST `/api/auth/logout` - Logout user
+2. Authentication Routes
+   - POST `/api/auth/signup` - User registration
+   - POST `/api/auth/login` - Email/password login
+   - GET `/api/auth/me` - Get current user
+   - POST `/api/auth/logout` - User logout
+   - GET `/api/auth/verify` - Verify auth token
+   - POST `/api/auth/github/sync` - GitHub OAuth sync
+   - PUT `/api/auth/profile` - Update user profile
 
-4. Redis Caching Strategy
-   - Cache user data after login
-   - Cache key format: `user:{userId}`
-   - Cache expiration: 1 hour
-   - Automatic cache invalidation on logout
+3. Profile Management
+   - Update basic information (name, role, company)
+   - Update education details (university, graduation year)
+   - Update social links (GitHub, LinkedIn, website)
+   - Password management with bcrypt hashing
+   - Profile data caching with Redis
 
-5. Security Best Practices
-   - Secure password hashing
-   - JWT token expiration
-   - Input validation
-   - Error handling
-   - Rate limiting ready
-   - CORS configuration
+4. Security Features
+   - JWT-based authentication
+   - Password hashing with bcrypt
+   - Token expiration (7 days)
+   - Redis-based session caching
+   - Protected route middleware
 
-#### Dependencies Added
-- bcryptjs - Password hashing
-- jsonwebtoken - JWT token generation
-- @types/bcryptjs - TypeScript types
-- @types/jsonwebtoken - TypeScript types
+### API Endpoints
 
-#### Next Steps
-1. Implement password reset functionality
-2. Add email verification
-3. Implement OAuth providers (Google, GitHub)
-4. Add rate limiting
-5. Enhance security measures
+#### POST /api/auth/signup
+Register a new user
+```json
+Request:
+{
+  "name": "string",
+  "email": "string",
+  "password": "string"
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "token": "string",
+    "user": {
+      "id": "string",
+      "name": "string",
+      "email": "string",
+      "avatar": "string",
+      "role": "string"
+    }
+  }
+}
+```
+
+#### POST /api/auth/login
+Login with email/password
+```json
+Request:
+{
+  "email": "string",
+  "password": "string"
+}
+
+Response: Same as signup
+```
+
+#### GET /api/auth/me
+Get current user profile
+```json
+Response:
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "name": "string",
+    "email": "string",
+    "avatar": "string",
+    "role": "string",
+    "password": "string", // Hashed (development only)
+    "company": "string",
+    "github": "string",
+    "linkedin": "string",
+    "personalWebsite": "string",
+    "education": {
+      "university": "string",
+      "graduationYear": number
+    }
+  }
+}
+```
+
+#### PUT /api/auth/profile
+Update user profile
+```json
+Request:
+{
+  "name": "string",              // Optional
+  "company": "string",           // Optional
+  "role": "string",             // Optional
+  "github": "string",           // Optional
+  "linkedin": "string",         // Optional
+  "personalWebsite": "string",  // Optional
+  "education": {                // Optional
+    "university": "string",
+    "graduationYear": number
+  },
+  "newPassword": "string"       // Optional: For password update
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    // Updated user data (same as GET /me response)
+  }
+}
+```
+
+### Cache Strategy
+1. User Cache:
+   - Key format: `user:{id}`
+   - Stores user data without sensitive information
+   - Expiration: 1 hour
+   - Invalidated on profile updates and logout
+
+2. Session Cache:
+   - Stores active user sessions
+   - Cleared on logout
+   - Used for quick token validation
+
+### Security Notes
+- Passwords are hashed using bcrypt with salt factor 10
+- JWT tokens expire after 7 days
+- Sensitive data is excluded from cache storage
+- Development mode shows hashed passwords for testing
+- GitHub OAuth integration with secure state handling
+
+### Next Steps
+- Add email verification
+- Implement password reset functionality
+- Add two-factor authentication
+- Enhance session management
+- Add rate limiting for auth endpoints
+- Remove password visibility in production
 
 ## Community Features
 
@@ -653,7 +754,6 @@ Authorization: Bearer <token>
 ```json
 {
   "name": "string",              // Username
-  "fullName": "string",         // Optional: Full name
   "company": "string",          // Optional: Company name
   "role": "string",            // Optional: Professional role
   "github": "string",          // Optional: GitHub username
@@ -701,3 +801,52 @@ Authorization: Bearer <token>
 - Password update requires both `currentPassword` and `newPassword`
 - `graduationYear` must be between 1900 and current year + 10
 - The endpoint updates the user cache after successful update 
+
+## Password Management
+
+### GET /api/auth/me (Updated)
+Now includes the hashed password in the response for development purposes. The password is not stored in the cache but is fetched fresh from the database each time.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "name": "string",
+    "email": "string",
+    "avatar": "string",
+    "role": "string",
+    "password": "string", // Hashed password (development only)
+    "company": "string",
+    "github": "string",
+    "linkedin": "string",
+    "personalWebsite": "string",
+    "education": {
+      "university": "string",
+      "graduationYear": number
+    }
+  }
+}
+```
+
+### PUT /api/auth/profile (Password Update)
+The profile update endpoint now supports direct password updates without requiring the current password (for development purposes).
+
+**Request Body for Password Update:**
+```json
+{
+  "newPassword": "string" // Minimum 6 characters
+}
+```
+
+**Notes:**
+- The new password will be automatically hashed before storage using bcrypt
+- Password must be at least 6 characters long
+- For development purposes, the current hashed password is visible in the Account tab
+- In production, this should be modified to require the current password for verification
+
+**Security Considerations:**
+- Passwords are hashed using bcrypt with a salt factor of 10
+- The hashed password is only included in the response for development purposes and should be removed in production
+- The frontend stores the hashed password only temporarily for display purposes 

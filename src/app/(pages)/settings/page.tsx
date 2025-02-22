@@ -27,6 +27,7 @@ interface UserProfile {
     university?: string;
     graduationYear?: number;
   };
+  password?: string;
 }
 
 export default function SettingsPage() {
@@ -306,16 +307,86 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="account">
-            {/* Account settings content */}
             <Card>
               <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
+                <CardTitle>Password Management</CardTitle>
                 <CardDescription>
-                  Manage your account preferences and security
+                  View your current password and set a new one
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Add account settings fields here */}
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.target as HTMLFormElement;
+                  const newPassword = (form.elements.namedItem('newPassword') as HTMLInputElement).value;
+                  
+                  try {
+                    setIsSaving(true);
+                    const token = localStorage.getItem('token');
+                    if (!token) throw new Error('Not authenticated');
+
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        newPassword
+                      })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                      toast({
+                        title: "Success",
+                        description: "Password updated successfully",
+                      });
+                      form.reset();
+                    } else {
+                      throw new Error(data.message || 'Failed to update password');
+                    }
+                  } catch (error) {
+                    console.error('Error updating password:', error);
+                    toast({
+                      title: "Error",
+                      description: error instanceof Error ? error.message : "Failed to update password",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Current Password (Hashed)</Label>
+                    <Input
+                      id="currentPassword"
+                      value={profile?.password || ''}
+                      disabled
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This is your current hashed password (visible for development)
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      name="newPassword"
+                      placeholder="Enter new password"
+                      minLength={6}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Password must be at least 6 characters long
+                    </p>
+                  </div>
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? 'Updating...' : 'Update Password'}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>

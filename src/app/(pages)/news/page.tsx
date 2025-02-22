@@ -22,8 +22,9 @@ interface NewsArticle {
   image: string;
   tags: string[];
   author: {
+    _id: string;
     name: string;
-    avatar: string;
+    avatar?: string;
   };
   createdAt: string;
   views: number;
@@ -35,6 +36,8 @@ export default function NewsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const { toast } = useToast();
 
   const filterOptions = [
@@ -47,12 +50,18 @@ export default function NewsPage() {
 
   const fetchNews = async () => {
     try {
-      console.log('API_BASE_URL:', API_BASE_URL);
-      console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-      const response = await fetch(`${API_BASE_URL}/api/news`);
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/news`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        }
+      });
       const data = await response.json();
       if (data.success) {
         setNews(data.data.news);
+      } else {
+        throw new Error(data.message || 'Failed to fetch news');
       }
     } catch (error) {
       console.error('Error fetching news:', error);
@@ -72,6 +81,22 @@ export default function NewsPage() {
 
   const handleSubmitNews = async (formData: FormData) => {
     try {
+      // Get auth token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to submit news",
+          variant: "destructive",
+        });
+        router.push('/login');
+        return;
+      }
+
+      // Get user data from token
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const userId = tokenData.id;
+
       const newsData = {
         title: formData.get('title'),
         content: formData.get('content'),
@@ -79,17 +104,22 @@ export default function NewsPage() {
         category: formData.get('category'),
         image: formData.get('image'),
         tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim()),
+        author: userId  // Add the author ID
       };
+
+      console.log('Submitting news with data:', newsData);  // Debug log
 
       const response = await fetch(`${API_BASE_URL}/api/news`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(newsData),
       });
 
       const data = await response.json();
+      console.log('Response from news creation:', data);  // Debug log
 
       if (data.success) {
         toast({
@@ -111,6 +141,17 @@ export default function NewsPage() {
     }
   };
 
+  // Filter news based on search query and category
+  const filteredNews = news.filter(article => {
+    const matchesSearch = searchQuery.toLowerCase() === '' || 
+      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.content.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
   return (
     <PageContainer className="py-6">
       <PageHeader
@@ -125,12 +166,10 @@ export default function NewsPage() {
       />
 
       <SearchAndFilter
-        searchPlaceholder="Search news articles..."
-        searchValue=""
-        onSearchChange={() => {}}
-        filterValue="all"
-        onFilterChange={() => {}}
-        filterOptions={filterOptions}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
       />
 
       {/* News Articles Grid */}
@@ -140,8 +179,8 @@ export default function NewsPage() {
           Array(6).fill(0).map((_, i) => (
             <div key={i} className="bg-card animate-pulse rounded-lg p-4 h-64" />
           ))
-        ) : news.length > 0 ? (
-          news.map((article) => (
+        ) : filteredNews.length > 0 ? (
+          filteredNews.map((article) => (
             <div key={article._id} onClick={() => router.push(`/news/${article._id}`)}>
               <NewsCard
                 news={{
@@ -151,7 +190,16 @@ export default function NewsPage() {
                   date: new Date(article.createdAt).toLocaleDateString(),
                   image: article.image || '/placeholder-news.jpg',
                   excerpt: article.excerpt,
-                  views: article.views
+                  views: article.views,
+                  author: article.author ? {
+                    _id: article.author._id,
+                    name: article.author.name || 'Anonymous',
+                    avatar: article.author.avatar
+                  } : undefined
+                }}
+                onDelete={() => {
+                  // Refresh the news list after deletion
+                  fetchNews();
                 }}
               />
             </div>

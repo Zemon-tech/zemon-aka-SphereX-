@@ -9,10 +9,15 @@ import { AppError } from '../utils/errors';
 const router = Router();
 const CACHE_EXPIRATION = 3600; // 1 hour
 
-// Create news article (temporarily without auth for testing)
-router.post('/', async (req, res, next) => {
+// Create news article
+router.post('/', auth, async (req: AuthRequest, res, next) => {
   try {
     const { title, content, excerpt, category, image, tags } = req.body;
+    
+    if (!req.user?.id) {
+      throw new AppError('User not authenticated', 401);
+    }
+
     const news = new News({
       title,
       content,
@@ -20,12 +25,18 @@ router.post('/', async (req, res, next) => {
       category,
       image,
       tags,
-      author: '65d8c25a3d96b6c594ad7d3c', // Temporary static author ID for testing
+      author: req.user.id
     });
 
-    await news.save();
+    const savedNews = await news.save();
+    
+    // Populate author information
+    const populatedNews = await News.findById(savedNews._id)
+      .populate('author', 'name avatar')
+      .lean();
+
     await clearCache('news:*');
-    res.status(201).json({ success: true, data: news });
+    res.status(201).json({ success: true, data: populatedNews });
   } catch (error) {
     next(error);
   }
@@ -51,23 +62,15 @@ router.get('/', async (req, res, next) => {
 
     const skip = (page - 1) * limit;
     const news = await News.find()
+      .populate('author', 'name avatar _id')  // Include _id in population
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    // Add default author data if not populated
-    const newsWithAuthor = news.map(item => ({
-      ...item,
-      author: {
-        name: 'Anonymous',
-        avatar: '/placeholder-avatar.jpg'
-      }
-    }));
-
     const total = await News.countDocuments();
     const data = {
-      news: newsWithAuthor,
+      news,
       pagination: {
         page,
         limit,
@@ -99,28 +102,21 @@ router.get('/:id', async (req, res, next) => {
       return res.json({ success: true, data: cachedData });
     }
 
-    const news = await News.findById(id).lean();
+    const news = await News.findById(id)
+      .populate('author', 'name avatar _id')
+      .lean();
 
     if (!news) {
       throw new AppError('News article not found', 404);
     }
 
-    // Add default author data if not populated
-    const newsWithAuthor = {
-      ...news,
-      author: {
-        name: 'Anonymous',
-        avatar: '/placeholder-avatar.jpg'
-      }
-    };
-
     // Update views count
     await News.findByIdAndUpdate(id, { $inc: { views: 1 } });
-    newsWithAuthor.views = (newsWithAuthor.views || 0) + 1;
+    news.views = (news.views || 0) + 1;
 
     // Cache the result
-    await setCache(cacheKey, newsWithAuthor, CACHE_EXPIRATION);
-    res.json({ success: true, data: newsWithAuthor });
+    await setCache(cacheKey, news, CACHE_EXPIRATION);
+    res.json({ success: true, data: news });
   } catch (error) {
     next(error);
   }

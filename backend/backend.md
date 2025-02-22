@@ -177,6 +177,7 @@ Implemented a comprehensive Repository API with GitHub integration, MongoDB stor
    - Added Redis caching for better performance
    - Added review system functionality
    - Implemented proper error handling and validation
+   - Added authorization checks for delete operations
 
 3. Added API routes (`store.routes.ts`)
    - GET `/store` - List all store items (cached)
@@ -184,10 +185,12 @@ Implemented a comprehensive Repository API with GitHub integration, MongoDB stor
    - POST `/store` - Add new store item (authenticated)
    - POST `/store/:id/review` - Add review to store item (authenticated)
    - DELETE `/store/:id` - Delete store item (authenticated)
+   - Added authorization check to ensure only tool owners or admins can delete
 
 4. Added validation (`store.validator.ts`)
    - Created Zod schemas for store items and reviews
    - Added input validation for all POST requests
+   - Added validation for delete operations
 
 ### Features
 - ✅ MongoDB integration for storing tool data
@@ -196,12 +199,43 @@ Implemented a comprehensive Repository API with GitHub integration, MongoDB stor
 - ✅ Authentication for protected routes
 - ✅ Input validation using Zod
 - ✅ Proper error handling and logging
+- ✅ Tool ownership and deletion management
+
+### API Endpoints
+
+#### DELETE /api/store/:id
+Delete a store item. Requires authentication and authorization.
+
+**Request Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Tool deleted successfully"
+}
+```
+
+**Error Responses:**
+- 401 Unauthorized: User not authenticated
+- 403 Forbidden: User not authorized to delete this tool
+- 404 Not Found: Tool not found
+
+**Notes:**
+- Only the tool owner or admin users can delete a tool
+- Deleting a tool also removes associated reviews and ratings
+- Cache is automatically invalidated after deletion
 
 ### Next Steps
 1. Add search functionality
 2. Implement sorting and filtering
 3. Add image upload support
 4. Add user favorites/bookmarks
+5. Add bulk delete for admin users
+6. Add tool restoration capability
 
 # Backend Documentation
 

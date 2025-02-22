@@ -242,6 +242,7 @@ export default function StorePage() {
                   developer: { _id: 'unknown', name: item.developer_name || 'Unknown Developer' },
                   url: item.url,
                 }}
+                onDelete={fetchStoreItems}
               />
             ))
           ) : (

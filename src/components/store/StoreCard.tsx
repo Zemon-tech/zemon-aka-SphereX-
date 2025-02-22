@@ -1,28 +1,89 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-interface StoreCardProps {
-  tool: {
-    id: string;
-    title: string;
-    description: string;
-    image: string;
-    developer: {
-      _id: string;
-      name: string;
-    } | null;
-    url: string;
+interface Tool {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  url: string;
+  developer: {
+    _id: string;
+    name: string;
   };
 }
 
-export default function StoreCard({ tool }: StoreCardProps) {
+interface StoreCardProps {
+  tool: Tool;
+  onDelete?: () => void;
+}
+
+export default function StoreCard({ tool, onDelete }: StoreCardProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { toast } = useToast();
+
   const handleVisitClick = (e: React.MouseEvent) => {
     e.preventDefault();
     window.open(tool.url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please log in to delete a tool');
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store/${tool.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete tool');
+      }
+
+      toast({
+        title: "Success",
+        description: "Tool deleted successfully",
+      });
+
+      // Call the onDelete callback to refresh the list
+      if (onDelete) {
+        onDelete();
+      }
+    } catch (error) {
+      console.error('Error deleting tool:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete tool",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setShowDeleteDialog(false);
+    }
   };
 
   // Get developer name safely
@@ -36,53 +97,93 @@ export default function StoreCard({ tool }: StoreCardProps) {
     .concat('...');
 
   return (
-    <Link href={`/store/${tool.id}`}>
-      <motion.article
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="group relative h-[160px] bg-card rounded-2xl border hover:border-primary/20 hover:shadow-lg transition-all duration-300"
-      >
-        <div className="p-6 h-full flex flex-col">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              {/* Logo */}
-              <div className="relative w-14 h-14">
-                <img
-                  src={tool.image}
-                  alt={tool.title}
-                  className="w-full h-full rounded-[18px] object-cover shadow-sm group-hover:shadow-md transition-all duration-300"
-                />
+    <>
+      <Link href={`/store/${tool.id}`}>
+        <motion.article
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="group relative h-[160px] bg-card rounded-2xl border hover:border-primary/20 hover:shadow-lg transition-all duration-300"
+        >
+          <div className="p-6 h-full flex flex-col">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                {/* Logo */}
+                <div className="relative w-14 h-14">
+                  <img
+                    src={tool.image}
+                    alt={tool.title}
+                    className="w-full h-full rounded-[18px] object-cover shadow-sm group-hover:shadow-md transition-all duration-300"
+                  />
+                </div>
+
+                {/* Content */}
+                <div>
+                  <h3 className="text-lg font-semibold leading-tight group-hover:text-primary transition-colors">
+                    {tool.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    by {developerName}
+                  </p>
+                </div>
               </div>
 
-              {/* Content */}
-              <div>
-                <h3 className="text-lg font-semibold leading-tight group-hover:text-primary transition-colors">
-                  {tool.title}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  by {developerName}
-                </p>
+              {/* Visit Button */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleVisitClick}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowDeleteDialog(true);
+                  }}
+                  disabled={isLoading}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
 
-            {/* Visit Button */}
-            <button
-              onClick={handleVisitClick}
-              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground text-xs font-medium px-4 py-1.5 rounded-full flex items-center gap-1.5 transition-all duration-300 group/btn"
-            >
-              Visit Site
-              <ArrowUpRight 
-                className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" 
-              />
-            </button>
+            {/* Description */}
+            <p className="text-sm text-muted-foreground mt-auto line-clamp-1">
+              {shortDescription}
+            </p>
           </div>
+        </motion.article>
+      </Link>
 
-          {/* Description */}
-          <p className="text-sm text-muted-foreground mt-auto line-clamp-1">
-            {shortDescription}
-          </p>
-        </div>
-      </motion.article>
-    </Link>
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Tool</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{tool.title}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isLoading}
+            >
+              {isLoading ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 } 

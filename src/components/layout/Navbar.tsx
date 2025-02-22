@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Menu, X, LogIn } from "lucide-react";
 import UserAvatar from "./UserAvatar";
+import Image from "next/image";
 
 interface User {
   _id: string;
@@ -62,7 +63,15 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold">Zemon</span>
+            <Image
+              src="/Zemon.svg"
+              alt="Zemon Logo"
+              width={40}
+              height={40}
+              className="h-10 w-auto dark:invert"
+              priority
+            />
+            <span className="text-xl font-extrabold tracking-tight">Zemon</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">

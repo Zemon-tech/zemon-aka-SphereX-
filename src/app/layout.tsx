@@ -7,8 +7,11 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SphereX - Open Source Community",
+  title: "Zemon - Open Source Community",
   description: "A modern platform for open source communities",
+  icons: {
+    icon: "/zemon.ico",
+  },
 };
 
 export default function RootLayout({

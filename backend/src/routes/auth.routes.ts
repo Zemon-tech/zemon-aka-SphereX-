@@ -271,4 +271,83 @@ router.post('/github/sync', async (req, res, next) => {
   }
 });
 
+// Update profile
+router.put('/profile', auth, async (req: AuthRequest, res, next) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError('User not authenticated', 401);
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Extract fields from request body
+    const {
+      name,
+      company,
+      role,
+      github,
+      linkedin,
+      personalWebsite,
+      education
+    } = req.body;
+
+    // Update basic information
+    if (name) user.name = name;
+    if (company) user.company = company;
+    if (role) user.role = role;
+
+    // Update social links
+    if (github) user.github = github;
+    if (linkedin) user.linkedin = linkedin;
+    if (personalWebsite) user.personalWebsite = personalWebsite;
+
+    // Update education
+    if (education) {
+      user.education = {
+        university: education.university || user.education?.university,
+        graduationYear: education.graduationYear || user.education?.graduationYear
+      };
+    }
+
+    // Handle password update if provided
+    if (req.body.currentPassword && req.body.newPassword) {
+      const isPasswordValid = await user.comparePassword(req.body.currentPassword);
+      if (!isPasswordValid) {
+        throw new AppError('Current password is incorrect', 401);
+      }
+      user.password = req.body.newPassword;
+    }
+
+    await user.save();
+
+    // Prepare user data for response
+    const userData = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      role: user.role,
+      company: user.company,
+      github: user.github,
+      linkedin: user.linkedin,
+      personalWebsite: user.personalWebsite,
+      education: user.education
+    };
+
+    // Update cache
+    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
+
+    res.json({
+      success: true,
+      data: userData
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router; 

@@ -18,15 +18,15 @@ interface UserProfile {
   name: string;
   email: string;
   avatar?: string;
-  github_username?: string;
-  linkedin_url?: string;
-  college?: string;
-  graduation_year?: string;
-  location?: string;
-  bio?: string;
-  website?: string;
+  github?: string;
+  linkedin?: string;
+  personalWebsite?: string;
   company?: string;
   role?: string;
+  education?: {
+    university?: string;
+    graduationYear?: number;
+  };
 }
 
 export default function SettingsPage() {
@@ -171,6 +171,7 @@ export default function SettingsPage() {
                         id="name"
                         value={profile?.name || ''}
                         onChange={e => setProfile(prev => ({ ...prev!, name: e.target.value }))}
+                        placeholder="John Doe"
                       />
                     </div>
                     <div className="space-y-2">
@@ -215,19 +216,35 @@ export default function SettingsPage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="college">College/University</Label>
+                      <Label htmlFor="university">College/University</Label>
                       <Input
-                        id="college"
-                        value={profile?.college || ''}
-                        onChange={e => setProfile(prev => ({ ...prev!, college: e.target.value }))}
+                        id="university"
+                        value={profile?.education?.university || ''}
+                        onChange={e => setProfile(prev => ({
+                          ...prev!,
+                          education: {
+                            ...prev?.education,
+                            university: e.target.value
+                          }
+                        }))}
+                        placeholder="University name"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="graduation">Graduation Year</Label>
+                      <Label htmlFor="graduationYear">Graduation Year</Label>
                       <Input
-                        id="graduation"
-                        value={profile?.graduation_year || ''}
-                        onChange={e => setProfile(prev => ({ ...prev!, graduation_year: e.target.value }))}
+                        id="graduationYear"
+                        type="number"
+                        min={1900}
+                        max={new Date().getFullYear() + 10}
+                        value={profile?.education?.graduationYear || ''}
+                        onChange={e => setProfile(prev => ({
+                          ...prev!,
+                          education: {
+                            ...prev?.education,
+                            graduationYear: parseInt(e.target.value) || undefined
+                          }
+                        }))}
                         placeholder="e.g. 2024"
                       />
                     </div>
@@ -248,25 +265,25 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <Github className="w-5 h-5" />
                       <Input
-                        value={profile?.github_username || ''}
-                        onChange={e => setProfile(prev => ({ ...prev!, github_username: e.target.value }))}
+                        value={profile?.github || ''}
+                        onChange={e => setProfile(prev => ({ ...prev!, github: e.target.value }))}
                         placeholder="GitHub username"
                       />
                     </div>
                     <div className="flex items-center gap-3">
                       <Linkedin className="w-5 h-5" />
                       <Input
-                        value={profile?.linkedin_url || ''}
-                        onChange={e => setProfile(prev => ({ ...prev!, linkedin_url: e.target.value }))}
+                        value={profile?.linkedin || ''}
+                        onChange={e => setProfile(prev => ({ ...prev!, linkedin: e.target.value }))}
                         placeholder="LinkedIn profile URL"
                       />
                     </div>
                     <div className="flex items-center gap-3">
                       <LinkIcon className="w-5 h-5" />
                       <Input
-                        value={profile?.website || ''}
-                        onChange={e => setProfile(prev => ({ ...prev!, website: e.target.value }))}
-                        placeholder="Personal website"
+                        value={profile?.personalWebsite || ''}
+                        onChange={e => setProfile(prev => ({ ...prev!, personalWebsite: e.target.value }))}
+                        placeholder="Personal website URL"
                       />
                     </div>
                   </div>

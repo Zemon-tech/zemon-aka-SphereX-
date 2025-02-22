@@ -637,3 +637,67 @@ Implemented a comprehensive rating and review system for store items with MongoD
 - Real-time rating calculations
 - Frontend state management
 - Optimistic UI updates
+
+## Profile Update Endpoint
+
+### PUT /api/auth/profile
+
+Updates the user's profile information. Requires authentication.
+
+**Request Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+```json
+{
+  "name": "string",              // Username
+  "fullName": "string",         // Optional: Full name
+  "company": "string",          // Optional: Company name
+  "role": "string",            // Optional: Professional role
+  "github": "string",          // Optional: GitHub username
+  "linkedin": "string",        // Optional: LinkedIn profile URL
+  "personalWebsite": "string", // Optional: Personal website URL
+  "education": {               // Optional: Education details
+    "university": "string",    // University/College name
+    "graduationYear": number   // Graduation year (between 1900 and current year + 10)
+  },
+  "currentPassword": "string", // Optional: Required only when updating password
+  "newPassword": "string"      // Optional: New password (min 6 characters)
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "name": "string",
+    "fullName": "string",
+    "email": "string",
+    "avatar": "string",
+    "role": "string",
+    "company": "string",
+    "github": "string",
+    "linkedin": "string",
+    "personalWebsite": "string",
+    "education": {
+      "university": "string",
+      "graduationYear": number
+    }
+  }
+}
+```
+
+**Error Responses:**
+- 401 Unauthorized: User not authenticated or invalid current password
+- 404 Not Found: User not found
+- 400 Bad Request: Invalid input data
+
+**Notes:**
+- All fields except `name` and `email` are optional
+- Password update requires both `currentPassword` and `newPassword`
+- `graduationYear` must be between 1900 and current year + 10
+- The endpoint updates the user cache after successful update 

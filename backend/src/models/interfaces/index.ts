@@ -4,11 +4,17 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
+  company?: string;
   avatar?: string;
   bio?: string;
   github?: string;
   twitter?: string;
   linkedin?: string;
+  personalWebsite?: string;
+  education?: {
+    university: string;
+    graduationYear: number;
+  };
   role: 'user' | 'admin';
   comparePassword(candidatePassword: string): Promise<boolean>;
   createdAt: Date;

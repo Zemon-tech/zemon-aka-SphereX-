@@ -25,10 +25,29 @@ const userSchema = new Schema<IUser>({
     type: String,
     default: '/default-avatar.jpg'
   },
+  company: {
+    type: String,
+    trim: true
+  },
   bio: String,
   github: String,
   twitter: String,
   linkedin: String,
+  personalWebsite: {
+    type: String,
+    trim: true
+  },
+  education: {
+    university: {
+      type: String,
+      trim: true
+    },
+    graduationYear: {
+      type: Number,
+      min: 1900,
+      max: new Date().getFullYear() + 10
+    }
+  },
   role: {
     type: String,
     enum: ['user', 'admin'],
@@ -58,5 +77,6 @@ userSchema.methods.comparePassword = async function(candidatePassword: string): 
 
 // Create indexes
 userSchema.index({ email: 1 });
+userSchema.index({ name: 'text' });
 
 export default model<IUser>('User', userSchema); 

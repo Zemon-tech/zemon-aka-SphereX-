@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import RatingForm from "@/components/store/RatingForm";
 
 interface ToolDetails {
   _id: string;
@@ -33,13 +34,10 @@ interface ToolDetails {
   lastUpdated?: string;
   screenshots?: string[];
   reviews?: Array<{
-    user: {
-      name: string;
-      avatar: string;
-    };
+    user_name: string;
     rating: number;
     comment: string;
-    date: string;
+    createdAt: string;
   }>;
 }
 
@@ -49,33 +47,60 @@ export default function ToolDetailsPage() {
   const [tool, setTool] = useState<ToolDetails | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
+  const [userReview, setUserReview] = useState<{ rating: number; comment: string; } | null>(null);
 
   useEffect(() => {
-    const fetchStoreItem = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store/${params.id}`);
-        const data = await response.json();
-        if (data.success) {
-          setTool(data.data);
-        } else {
-          throw new Error(data.message || 'Failed to fetch store item details');
-        }
-      } catch (error) {
-        console.error('Error fetching store item details:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load store item details",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     if (params.id) {
       fetchStoreItem();
     }
   }, [params.id, toast]);
+
+  useEffect(() => {
+    // Find user's review when tool data is loaded
+    if (tool?.reviews) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        // Decode the token to get user info (assuming JWT)
+        try {
+          const tokenData = JSON.parse(atob(token.split('.')[1]));
+          const review = tool.reviews.find(r => r.user_name === tokenData.name);
+          if (review) {
+            setUserReview({
+              rating: review.rating,
+              comment: review.comment
+            });
+          } else {
+            setUserReview(null);
+          }
+        } catch (error) {
+          console.error('Error decoding token:', error);
+          setUserReview(null);
+        }
+      }
+    }
+  }, [tool]);
+
+  const fetchStoreItem = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store/${params.id}`);
+      const data = await response.json();
+      if (data.success) {
+        setTool(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch store item details');
+      }
+    } catch (error) {
+      console.error('Error fetching store item details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load store item details",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -161,28 +186,33 @@ export default function ToolDetailsPage() {
             </div>
 
             {/* Rating & Stats */}
-            <div className="flex items-center gap-6 mt-6">
+            <div className="flex items-center gap-6 mt-4">
               <div className="flex items-center gap-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-5 h-5 ${
-                      i < Math.floor(tool.average_rating)
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "fill-muted text-muted"
-                    }`}
-                  />
-                ))}
-                <span className="text-lg font-medium ml-2">
-                  {tool.average_rating.toFixed(1)}
-                </span>
-                <span className="text-muted-foreground">
-                  ({tool.total_reviews} reviews)
-                </span>
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-6 h-6 ${
+                        i < Math.floor(tool.average_rating)
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "fill-muted text-muted"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold">
+                    {tool.average_rating.toFixed(1)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {tool.total_reviews} {tool.total_reviews === 1 ? 'review' : 'reviews'}
+                  </span>
+                </div>
               </div>
-              <div className="w-px h-6 bg-border" />
-              <Badge variant="outline">v{tool.version}</Badge>
-              <Badge variant="outline">{tool.category}</Badge>
+              <div className="flex items-center gap-4">
+                <Badge variant="outline">{tool.category}</Badge>
+                <Badge variant="outline">{tool.price}</Badge>
+              </div>
             </div>
           </div>
         </div>
@@ -234,43 +264,69 @@ export default function ToolDetailsPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="reviews" className="space-y-6">
-            {tool.reviews?.map((review, index) => (
-              <div
-                key={index}
-                className="bg-card border rounded-xl p-6 space-y-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={review.user.avatar} />
-                      <AvatarFallback>
-                        {review.user.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{review.user.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {review.date}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < review.rating
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "fill-muted text-muted"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-muted-foreground">{review.comment}</p>
+          <TabsContent value="reviews" className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h2 className="text-2xl font-semibold mb-6">
+                  {userReview ? 'Your Review' : 'Add Your Review'}
+                </h2>
+                <RatingForm 
+                  storeId={tool._id} 
+                  existingReview={userReview}
+                  onReviewAdded={() => {
+                    fetchStoreItem();
+                  }} 
+                />
               </div>
-            ))}
+              <div>
+                <h2 className="text-2xl font-semibold mb-6">
+                  Reviews ({tool.total_reviews})
+                </h2>
+                <div className="space-y-6">
+                  {tool.reviews && tool.reviews.length > 0 ? (
+                    tool.reviews.map((review, index) => (
+                      <div
+                        key={index}
+                        className="bg-card border rounded-xl p-6 space-y-4"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>
+                                {review.user_name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{review.user_name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(review.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < review.rating
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "fill-muted text-muted"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground">{review.comment}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      No reviews yet. Be the first to review!
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="developer" className="space-y-6">

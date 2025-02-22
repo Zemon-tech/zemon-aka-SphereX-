@@ -528,3 +528,112 @@ Each error response includes a message field explaining the error.
 - Seamless redirection to login page
 - Consistent behavior across ideas and resources sections
 - Improved error messaging for better user understanding
+
+### Rating System Implementation
+
+#### Overview
+Implemented a comprehensive rating and review system for store items with MongoDB storage and Redis caching.
+
+#### Features Implemented
+1. MongoDB Schema Enhancement
+   - Added review schema with fields:
+     - `user_name` (String, required)
+     - `rating` (Number, required, min: 1, max: 5)
+     - `comment` (String, optional)
+     - `createdAt` (Date, auto-generated)
+   - Added to store item schema:
+     - `reviews` (Array of review schema)
+     - `average_rating` (Number, auto-calculated)
+     - `total_reviews` (Number, auto-updated)
+   - Implemented pre-save middleware for automatic rating calculations
+
+2. API Endpoints
+   - POST `/api/store/:id/review` - Add or update review (authenticated)
+     - Validates user authentication
+     - Prevents duplicate reviews from same user
+     - Updates existing review if user has already reviewed
+     - Handles optional comments
+     - Auto-calculates average rating
+
+3. Frontend Integration
+   - Interactive star rating component
+   - Review form with validation
+   - Dynamic review list display
+   - Real-time rating updates
+   - User-specific review management
+     - View own review
+     - Update existing review
+     - Toggle between view and edit modes
+
+4. Security & Validation
+   - JWT authentication required for reviews
+   - Input validation for ratings (1-5)
+   - Optional comment validation (10-500 chars)
+   - User-specific review access control
+   - Proper error handling and messages
+
+5. Redis Caching
+   - Cache invalidation on review updates
+   - Automatic recalculation of average ratings
+   - Cache key format: `store:item:{id}`
+   - Cache cleared on new reviews/updates
+
+#### Dependencies Used
+- mongoose - MongoDB ODM
+- redis - Caching layer
+- jsonwebtoken - Authentication
+- zod - Input validation
+
+#### Cache Strategy
+1. Store Item Cache:
+   - Key format: `store:item:{id}`
+   - Includes full item data with reviews
+   - Invalidated on review add/update
+   - Auto-updates average rating
+
+2. Review Management:
+   - User reviews tracked by username
+   - Single review per user per item
+   - Automatic update of existing reviews
+   - Real-time frontend updates
+
+#### Next Steps
+1. Add review moderation system
+2. Implement review sorting options
+3. Add review helpfulness voting
+4. Add review reporting functionality
+5. Implement review analytics
+6. Add review notifications
+7. Add review response system for store owners
+
+#### API Response Format
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "string",
+    "name": "string",
+    "reviews": [
+      {
+        "user_name": "string",
+        "rating": "number",
+        "comment": "string",
+        "createdAt": "date"
+      }
+    ],
+    "average_rating": "number",
+    "total_reviews": "number"
+  }
+}
+```
+
+#### Best Practices Implemented
+- Proper error handling with custom messages
+- Input validation for all fields
+- Authentication middleware for protected routes
+- Redis caching for performance
+- MongoDB indexes for efficient queries
+- User-specific review management
+- Real-time rating calculations
+- Frontend state management
+- Optimistic UI updates

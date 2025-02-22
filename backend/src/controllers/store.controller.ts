@@ -111,18 +111,39 @@ export const addReview = async (req: Request, res: Response, next: NextFunction)
   try {
     const { id } = req.params;
     const { rating, comment } = req.body;
+    const user = (req as any).user; // Get authenticated user
+
+    if (!user) {
+      throw new AppError('Authentication required', 401);
+    }
 
     const item = await StoreItem.findById(id);
     if (!item) {
       throw new AppError('Store item not found', 404);
     }
 
-    item.reviews.push({
-      user_name: 'Anonymous',
-      rating,
-      comment,
-      createdAt: new Date(),
-    });
+    // Check if user has already reviewed
+    const existingReviewIndex = item.reviews.findIndex(
+      (review: any) => review.user_name === user.name
+    );
+
+    if (existingReviewIndex !== -1) {
+      // Update existing review
+      item.reviews[existingReviewIndex].user_name = user.name;
+      item.reviews[existingReviewIndex].rating = rating;
+      if (comment) {
+        item.reviews[existingReviewIndex].comment = comment;
+      }
+      item.reviews[existingReviewIndex].createdAt = new Date();
+    } else {
+      // Add new review
+      item.reviews.push({
+        user_name: user.name,
+        rating,
+        comment: comment || 'No comment provided',
+        createdAt: new Date()
+      });
+    }
 
     await item.save();
 

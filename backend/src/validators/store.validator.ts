@@ -56,8 +56,9 @@ export function validateReview(data: any) {
     errors.push('Rating must be a number between 1 and 5');
   }
 
-  if (!data.comment || typeof data.comment !== 'string' || data.comment.length < 10 || data.comment.length > 500) {
-    errors.push('Comment must be between 10 and 500 characters');
+  // Comment is optional, but if provided must meet length requirements
+  if (data.comment && (typeof data.comment !== 'string' || data.comment.length < 10 || data.comment.length > 500)) {
+    errors.push('If provided, comment must be between 10 and 500 characters');
   }
 
   return errors;

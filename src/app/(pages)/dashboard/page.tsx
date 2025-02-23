@@ -35,6 +35,7 @@ interface User {
   phone?: string;
   role?: string;
   linkedin?: string;
+  personalWebsite?: string;
 }
 
 interface UserStats {
@@ -168,8 +169,10 @@ export default function DashboardPage() {
             const completeUserData = {
               ...userData,
               ...data.data,
-              github: data.data.github || data.data.github_username, // Ensure github field is set
-              github_username: data.data.github_username || data.data.github // Ensure github_username field is set
+              github: data.data.github || data.data.github_username,
+              github_username: data.data.github_username || data.data.github,
+              linkedin: data.data.linkedin || userData.linkedin || '',
+              personalWebsite: data.data.personalWebsite || userData.personalWebsite || ''
             };
             console.log('Complete user data:', completeUserData);
 
@@ -207,7 +210,6 @@ export default function DashboardPage() {
                   description: githubError instanceof Error ? githubError.message : "Failed to load GitHub data",
                   variant: "destructive",
                 });
-                // Even if GitHub fetch fails, we still know the account is linked
                 setIsGithubLinked(true);
               }
             } else {
@@ -429,6 +431,17 @@ export default function DashboardPage() {
                       >
                         <Linkedin className="w-4 h-4" />
                         LinkedIn
+                      </a>
+                    )}
+                    {user?.personalWebsite && (
+                      <a 
+                        href={user.personalWebsite.startsWith('http') ? user.personalWebsite : `https://${user.personalWebsite}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Website
                       </a>
                     )}
                   </div>

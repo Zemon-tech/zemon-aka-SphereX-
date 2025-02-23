@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, Building, GraduationCap, MapPin, Link as LinkIcon, Save } from "lucide-react";
+import { Github, Linkedin, Link as LinkIcon, Save } from "lucide-react";
 import PageContainer from "@/components/layout/PageContainer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,41 +35,6 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Not authenticated');
-        }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          setProfile(data.data);
-        } else {
-          throw new Error(data.message || 'Failed to fetch profile');
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load profile",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [toast]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -92,23 +56,31 @@ export default function SettingsPage() {
 
       const data = await response.json();
       if (data.success) {
-        toast({
-          title: "Success",
-          description: "Profile updated successfully",
-        });
-        
         // Merge the updated data with existing user data
         const updatedUserData = {
           ...existingUser,
-          ...data.data
+          ...data.data,
+          linkedin: data.data.linkedin || '',
+          personalWebsite: data.data.personalWebsite || ''
         };
         
         // Update local storage with merged data
         localStorage.setItem('user', JSON.stringify(updatedUserData));
         
+        // Update profile state
+        setProfile(updatedUserData);
+        
         // Dispatch auth state change event with merged data
         const event = new CustomEvent('auth-state-change', { detail: updatedUserData });
         window.dispatchEvent(event);
+
+        // Fetch fresh data from the server
+        await fetchProfile();
+
+        toast({
+          title: "Success",
+          description: "Profile updated successfully",
+        });
       } else {
         throw new Error(data.message || 'Failed to update profile');
       }
@@ -123,6 +95,80 @@ export default function SettingsPage() {
       setIsSaving(false);
     }
   };
+
+  // Extract fetchProfile function to be reusable
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Update local storage with complete profile data
+        const updatedProfile = {
+          ...data.data,
+          linkedin: data.data.linkedin || '',
+          personalWebsite: data.data.personalWebsite || ''
+        };
+        setProfile(updatedProfile);
+        localStorage.setItem('user', JSON.stringify(updatedProfile));
+
+        // Automatically save the profile to ensure data consistency
+        try {
+          const saveResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updatedProfile)
+          });
+
+          const saveData = await saveResponse.json();
+          if (saveData.success) {
+            // Update local storage with saved data
+            localStorage.setItem('user', JSON.stringify(saveData.data));
+            
+            // Dispatch auth state change event
+            const event = new CustomEvent('auth-state-change', { detail: saveData.data });
+            window.dispatchEvent(event);
+          }
+        } catch (saveError) {
+          console.error('Error auto-saving profile:', saveError);
+        }
+      } else {
+        throw new Error(data.message || 'Failed to fetch profile');
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add an interval to periodically fetch profile data
+  useEffect(() => {
+    fetchProfile();
+
+    // Set up an interval to fetch profile data every 30 seconds
+    const intervalId = setInterval(fetchProfile, 30000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
 
   if (isLoading) {
     return (

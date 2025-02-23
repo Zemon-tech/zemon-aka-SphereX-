@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Github } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -40,13 +39,48 @@ export default function LoginPage() {
         throw new Error(data.message || 'Authentication failed');
       }
 
-      // Store token and user data
+      // Store token and initial user data
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
 
-      // Dispatch auth state change event
-      const event = new CustomEvent('auth-state-change', { detail: data.data.user });
-      window.dispatchEvent(event);
+      // Fetch complete profile data
+      const profileResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${data.data.token}`
+        }
+      });
+
+      const profileData = await profileResponse.json();
+      if (profileData.success) {
+        // Update user data with complete profile
+        const completeUserData = {
+          ...data.data.user,
+          ...profileData.data,
+          linkedin: profileData.data.linkedin || '',
+          personalWebsite: profileData.data.personalWebsite || ''
+        };
+
+        // Update localStorage with complete data
+        localStorage.setItem('user', JSON.stringify(completeUserData));
+
+        // Dispatch auth state change event with complete data
+        const event = new CustomEvent('auth-state-change', { detail: completeUserData });
+        window.dispatchEvent(event);
+
+        // Save the profile data to ensure it's properly stored
+        const saveResponse = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${data.data.token}`
+          },
+          body: JSON.stringify(completeUserData)
+        });
+
+        if (!saveResponse.ok) {
+          console.error('Failed to save complete profile data');
+        }
+      }
 
       toast({
         title: "Success",

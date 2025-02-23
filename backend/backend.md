@@ -12,11 +12,11 @@ Implemented a comprehensive News API with MongoDB for storage and Redis for cach
    - Added view count tracking for articles
 
 2. Express.js Routes
-   - POST `/news` - Create new article
+   - POST `/news` - Create new article (admin only)
    - GET `/news` - List articles with pagination
    - GET `/news/:id` - Get single article with view tracking
-   - PUT `/news/:id` - Update article
-   - DELETE `/news/:id` - Delete article
+   - PUT `/news/:id` - Update article (admin only)
+   - DELETE `/news/:id` - Delete article (admin only)
    - POST `/news/:id/like` - Like/Unlike article
    - POST `/news/:id/comments` - Add comment
 
@@ -28,12 +28,13 @@ Implemented a comprehensive News API with MongoDB for storage and Redis for cach
    - Automatic cache clearing on content updates
 
 4. Security & Performance
-   - Authentication middleware for protected routes (temporarily disabled for testing)
+   - Authentication middleware for protected routes
+   - Admin role authorization middleware
+   - Role-based access control for create/update/delete operations
    - Input validation and error handling
    - Proper error responses with status codes
    - Optimized database queries with lean()
    - View count tracking with atomic updates
-   - Default author data handling for testing phase
 
 5. API Response Format
 ```json
@@ -76,6 +77,7 @@ Implemented a comprehensive News API with MongoDB for storage and Redis for cach
 - dotenv
 - cors
 - body-parser
+- jsonwebtoken
 
 #### Cache Strategy
 1. List Cache:
@@ -89,15 +91,23 @@ Implemented a comprehensive News API with MongoDB for storage and Redis for cach
    - View count updated and cached
    - Invalidated on article update/delete
 
+#### Authorization Implementation
+1. Admin Role Check
+   - Middleware to verify user role is 'admin'
+   - Required for create/update/delete operations
+   - JWT token includes user role
+
+2. Error Handling
+   - 401 Unauthorized: User not authenticated
+   - 403 Forbidden: User not admin
+   - Proper error messages for each case
+
 #### Next Steps
 - Implement search functionality
 - Add categories and tags filtering
 - Add pagination for comments
 - Implement comment moderation
-- Add proper user authentication
-- Implement proper author data handling
-- Add rate limiting for view counting 
-
+- Add rate limiting for view counting
 
 ###Topic: Repository API Implementation
 
@@ -120,9 +130,9 @@ Implemented a comprehensive Repository API with GitHub integration, MongoDB stor
 3. Express.js Routes
    - GET `/repos` - List repositories with pagination
    - GET `/repos/:id` - Get repository details
-   - POST `/repos` - Add new repository
-   - PUT `/repos/:id` - Update repository (sync with GitHub)
-   - DELETE `/repos/:id` - Delete repository
+   - POST `/repos` - Add new repository (authenticated)
+   - PUT `/repos/:id` - Update repository (admin or owner)
+   - DELETE `/repos/:id` - Delete repository (admin or owner)
    - POST `/repos/:id/like` - Like/Unlike repository
    - POST `/repos/:id/comments` - Add comment
 
@@ -134,35 +144,11 @@ Implemented a comprehensive Repository API with GitHub integration, MongoDB stor
 
 5. Security & Performance
    - Authentication middleware for protected routes
+   - Admin and owner authorization middleware
    - Input validation and error handling
    - Proper error responses with status codes
    - Optimized database queries with lean()
    - GitHub API rate limit handling
-
-#### Dependencies Added
-- @octokit/rest - GitHub API client
-- mongoose - MongoDB ODM
-- redis - Caching layer
-- express - Web framework
-
-#### Cache Strategy
-1. List Cache:
-   - Key format: `repos:all:{page}:{limit}`
-   - Includes pagination data
-   - Invalidated on any repo update/create/delete
-
-2. Detail Cache:
-   - Key format: `repos:{id}`
-   - Includes full repo data with GitHub info
-   - Invalidated on update/delete/like/comment
-
-#### Next Steps
-- Implement repository search functionality
-- Add repository categories and tags
-- Add rate limiting for GitHub API calls
-- Implement webhook for GitHub updates
-- Add repository analytics tracking
-- Implement proper error handling for GitHub API limits
 
 ### Store Implementation (2024-03-19)
 
@@ -184,7 +170,7 @@ Implemented a comprehensive Repository API with GitHub integration, MongoDB stor
    - GET `/store/:id` - Get store item details
    - POST `/store` - Add new store item (authenticated)
    - POST `/store/:id/review` - Add review to store item (authenticated)
-   - DELETE `/store/:id` - Delete store item (authenticated)
+   - DELETE `/store/:id` - Delete store item (admin or owner)
    - Added authorization check to ensure only tool owners or admins can delete
 
 4. Added validation (`store.validator.ts`)
@@ -197,6 +183,7 @@ Implemented a comprehensive Repository API with GitHub integration, MongoDB stor
 - ✅ Redis caching for improved performance
 - ✅ Rating and review system
 - ✅ Authentication for protected routes
+- ✅ Admin and owner authorization
 - ✅ Input validation using Zod
 - ✅ Proper error handling and logging
 - ✅ Tool ownership and deletion management
@@ -236,6 +223,80 @@ Authorization: Bearer <token>
 4. Add user favorites/bookmarks
 5. Add bulk delete for admin users
 6. Add tool restoration capability
+
+## Events API
+
+### Models
+
+#### Event Model
+- `title` (String, required): Event title
+- `description` (String, required): Event description
+- `date` (Date, required): Event date
+- `time` (String, required): Event time
+- `location` (String, required): Event location
+- `mode` (String, enum: ['online', 'in-person', 'hybrid']): Event mode
+- `type` (String, enum: ['hackathon', 'workshop', 'conference', 'meetup', 'webinar']): Event type
+- `capacity` (Number, optional): Maximum number of attendees
+- `registrationUrl` (String, optional): External registration URL
+- `rewards` (String, optional): Event rewards/prizes
+- `image` (String, required): Event image URL
+- `tags` (Array of Strings): Event tags for filtering
+- `organizer` (ObjectId, ref: 'User'): Event organizer
+- `attendees` (Array of ObjectIds, ref: 'User'): Registered attendees
+- `clicks` (Number): Number of event page views
+- `registrations` (Number): Number of registrations
+
+### API Endpoints
+
+#### POST /api/events
+Create a new event (admin only)
+- Authentication required
+- Admin role required
+- Body: Event details
+- Response: Created event object
+
+#### PUT /api/events/:id
+Update an event (admin or organizer)
+- Authentication required
+- Admin or organizer role required
+- Body: Updated event details
+- Response: Updated event object
+
+#### DELETE /api/events/:id
+Delete an event (admin or organizer)
+- Authentication required
+- Admin or organizer role required
+- Response: Success message
+
+### Authorization Implementation
+
+1. Admin Authorization
+   - Middleware to verify user role is 'admin'
+   - Required for create operations
+   - JWT token includes user role
+
+2. Owner Authorization
+   - Middleware to verify user is the organizer
+   - Required for update/delete operations
+   - Checks organizer field against user ID
+
+3. Combined Admin/Owner Check
+   - Middleware that allows either admin or owner
+   - Used for update/delete operations
+   - Provides flexibility for content management
+
+4. Error Handling
+   - 401 Unauthorized: User not authenticated
+   - 403 Forbidden: User not authorized
+   - Proper error messages for each case
+
+### Next Steps
+1. Add event analytics dashboard
+2. Implement attendee management
+3. Add event categories and filtering
+4. Implement event reminders
+5. Add bulk operations for admins
+6. Enhance registration system
 
 # Backend Documentation
 

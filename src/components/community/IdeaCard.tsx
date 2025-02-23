@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Trash2, Loader2, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
@@ -41,8 +41,23 @@ export default function IdeaCard({ idea, onDelete, onRefresh }: IdeaCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        setIsAdmin(tokenData.role === 'admin');
+        setCurrentUserId(tokenData.id);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
 
   // Generate avatar URL using UI Avatars
   const authorName = idea.author?.name || 'Anonymous';
@@ -55,17 +70,29 @@ export default function IdeaCard({ idea, onDelete, onRefresh }: IdeaCardProps) {
 
     try {
       setIsDeleting(true);
-      await axios.delete(`http://localhost:5002/api/community/ideas/${idea.id}`);
-      toast({
-        title: "Success",
-        description: "Idea deleted successfully",
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please log in to delete the idea');
+      }
+
+      const response = await axios.delete(`http://localhost:5002/api/community/ideas/${idea.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
-      onDelete?.();
-    } catch (error) {
+
+      if (response.status === 200) {
+        toast({
+          title: "Success",
+          description: "Idea deleted successfully",
+        });
+        onDelete?.();
+      }
+    } catch (error: any) {
       console.error('Error deleting idea:', error);
       toast({
         title: "Error",
-        description: "Failed to delete idea. Please try again.",
+        description: error.response?.data?.message || "Failed to delete idea. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -166,19 +193,21 @@ export default function IdeaCard({ idea, onDelete, onRefresh }: IdeaCardProps) {
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-          >
-            {isDeleting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4" />
-            )}
-          </Button>
+          {(isAdmin || currentUserId === idea.author?._id) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex-1">

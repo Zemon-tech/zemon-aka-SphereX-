@@ -38,7 +38,7 @@ router.get('/ideas', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/ideas/:id', async (req: Request, res: Response) => {
+router.delete('/ideas/:id', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -46,14 +46,20 @@ router.delete('/ideas/:id', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid idea ID' });
     }
 
-    const deletedIdea = await Idea.findByIdAndDelete(id);
+    // Attach the model to the request for the adminOrOwnerAuth middleware
+    req.model = Idea;
     
-    if (!deletedIdea) {
-      return res.status(404).json({ message: 'Idea not found' });
-    }
+    // Use the adminOrOwnerAuth middleware with 'author' field
+    await adminOrOwnerAuth(req, res, async () => {
+      const deletedIdea = await Idea.findByIdAndDelete(id);
+      
+      if (!deletedIdea) {
+        return res.status(404).json({ message: 'Idea not found' });
+      }
 
-    console.log('Idea deleted successfully:', deletedIdea);
-    res.json({ message: 'Idea deleted successfully' });
+      console.log('Idea deleted successfully:', deletedIdea);
+      res.json({ message: 'Idea deleted successfully' });
+    }, 'author'); // Note: using 'author' as the owner field
   } catch (error) {
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',

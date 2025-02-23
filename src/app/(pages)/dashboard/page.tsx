@@ -7,7 +7,7 @@ import {
   GitBranch, Users, Activity, BookOpen, Link as LinkIcon,
   Calendar, Clock, Award, Check, GitCommit,
   Box, Upload, Code, BookMarked, Plus,
-  ExternalLink, Eye, Globe
+  ExternalLink, Eye, Globe, Linkedin
 } from "lucide-react";
 import PageContainer from "@/components/layout/PageContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +45,7 @@ interface User {
   github?: string;
   phone?: string;
   role?: string;
+  linkedin?: string;
 }
 
 interface GitHubData {
@@ -249,6 +250,23 @@ export default function DashboardPage() {
     };
 
     fetchUserData();
+
+    // Add event listener for profile updates
+    const handleProfileUpdate = (event: CustomEvent) => {
+      const updatedUser = event.detail;
+      setUser(updatedUser);
+      
+      // Refetch all data when profile is updated
+      fetchUserData();
+      fetchPublishedProjects();
+      fetchUserTools();
+    };
+
+    window.addEventListener('auth-state-change', handleProfileUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('auth-state-change', handleProfileUpdate as EventListener);
+    };
   }, [router, toast]);
 
   const handlePublishRepo = async (repoId: string) => {
@@ -396,17 +414,30 @@ export default function DashboardPage() {
                 <div>
                   <h1 className="text-4xl font-bold">{user?.name}</h1>
                   <p className="text-lg text-muted-foreground mt-1">{user?.role}</p>
-                  {user?.github_username && (
-                    <a 
-                      href={`https://github.com/${user.github_username}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mt-2"
-                    >
-                      <Github className="w-4 h-4" />
-                      {user.github_username}
-                    </a>
-                  )}
+                  <div className="flex items-center gap-4 mt-2">
+                    {user?.github && (
+                      <a 
+                        href={`https://github.com/${user.github}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
+                      >
+                        <Github className="w-4 h-4" />
+                        {user.github}
+                      </a>
+                    )}
+                    {user?.linkedin && (
+                      <a 
+                        href={user.linkedin.startsWith('http') ? user.linkedin : `https://linkedin.com/in/${user.linkedin}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
+                      >
+                        <Linkedin className="w-4 h-4" />
+                        LinkedIn
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <Button onClick={() => router.push('/settings')}>Edit Profile</Button>
               </div>

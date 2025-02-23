@@ -78,6 +78,9 @@ export default function SettingsPage() {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Not authenticated');
 
+      // Get existing user data from localStorage
+      const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
         method: 'PUT',
         headers: {
@@ -94,11 +97,17 @@ export default function SettingsPage() {
           description: "Profile updated successfully",
         });
         
-        // Update local storage
-        localStorage.setItem('user', JSON.stringify(data.data));
+        // Merge the updated data with existing user data
+        const updatedUserData = {
+          ...existingUser,
+          ...data.data
+        };
         
-        // Dispatch auth state change event
-        const event = new CustomEvent('auth-state-change', { detail: data.data });
+        // Update local storage with merged data
+        localStorage.setItem('user', JSON.stringify(updatedUserData));
+        
+        // Dispatch auth state change event with merged data
+        const event = new CustomEvent('auth-state-change', { detail: updatedUserData });
         window.dispatchEvent(event);
       } else {
         throw new Error(data.message || 'Failed to update profile');
@@ -320,6 +329,15 @@ export default function SettingsPage() {
                   const form = e.target as HTMLFormElement;
                   const newPassword = (form.elements.namedItem('newPassword') as HTMLInputElement).value;
                   
+                  if (!newPassword || newPassword.length < 6) {
+                    toast({
+                      title: "Error",
+                      description: "Password must be at least 6 characters long",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
                   try {
                     setIsSaving(true);
                     const token = localStorage.getItem('token');
@@ -332,7 +350,7 @@ export default function SettingsPage() {
                         'Authorization': `Bearer ${token}`
                       },
                       body: JSON.stringify({
-                        newPassword
+                        password: newPassword
                       })
                     });
 

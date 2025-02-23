@@ -67,7 +67,6 @@ router.get('/', async (req, res, next) => {
 
     const skip = (page - 1) * limit;
     const news = await News.find()
-      .populate('author', 'name avatar _id')  // Include _id in population
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -107,9 +106,7 @@ router.get('/:id', async (req, res, next) => {
       return res.json({ success: true, data: cachedData });
     }
 
-    const news = await News.findById(id)
-      .populate('author', 'name avatar _id')
-      .lean();
+    const news = await News.findById(id).lean();
 
     if (!news) {
       throw new AppError('News article not found', 404);

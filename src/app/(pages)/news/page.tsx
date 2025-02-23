@@ -55,7 +55,20 @@ export default function NewsPage() {
       });
       const data = await response.json();
       if (data.success) {
-        setNews(data.data.news);
+        // Map the news data to match the expected format
+        const mappedNews = data.data.news.map((article: any) => ({
+          _id: article._id,
+          title: article.title,
+          content: article.content,
+          excerpt: article.excerpt,
+          category: article.category,
+          image: article.image || '/placeholder-news.jpg',
+          tags: article.tags || [],
+          createdAt: article.createdAt,
+          views: article.views || 0,
+          likes: article.likes || []
+        }));
+        setNews(mappedNews);
       } else {
         throw new Error(data.message || 'Failed to fetch news');
       }

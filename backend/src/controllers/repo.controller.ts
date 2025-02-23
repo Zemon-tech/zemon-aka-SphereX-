@@ -259,18 +259,23 @@ export const getUserRepos = async (req: Request, res: Response, next: NextFuncti
       throw new AppError('User must be authenticated', 401);
     }
 
+    console.log('Fetching repos for user:', userId);
     const repos = await Repo.find({ added_by: userId })
       .populate('added_by', 'name')
       .sort({ createdAt: -1 })
       .lean();
 
+    console.log('Found repos:', repos.length);
+
+    // Always return an array, even if empty
     res.json({
       success: true,
       data: {
-        repos
+        repos: repos || []
       }
     });
   } catch (error) {
+    console.error('Error in getUserRepos:', error);
     next(error);
   }
 };

@@ -128,10 +128,13 @@ router.get('/me', async (req, res, next) => {
     const cachedUser = await getCache(`user:${decoded.id}`);
     if (cachedUser) {
       const userData = JSON.parse(cachedUser);
-      // Get fresh password from database for development
+      // Get fresh data from database to ensure we have latest GitHub info
       const user = await User.findById(decoded.id);
       if (user) {
-        userData.password = user.password; // Include hashed password
+        // Update cached data with latest GitHub info
+        userData.github = user.github;
+        userData.github_username = user.github; // Ensure both fields are set
+        await setCache(`user:${decoded.id}`, JSON.stringify(userData), CACHE_EXPIRATION);
       }
       return res.json({
         success: true,
@@ -151,17 +154,16 @@ router.get('/me', async (req, res, next) => {
       email: user.email,
       avatar: user.avatar,
       role: user.role,
-      password: user.password, // Include hashed password
       company: user.company,
       github: user.github,
+      github_username: user.github, // Ensure both fields are set
       linkedin: user.linkedin,
       personalWebsite: user.personalWebsite,
       education: user.education
     };
 
-    // Cache user data (without password)
-    const { password, ...cacheData } = userData;
-    await setCache(`user:${user._id}`, JSON.stringify(cacheData), CACHE_EXPIRATION);
+    // Cache user data
+    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
 
     res.json({
       success: true,

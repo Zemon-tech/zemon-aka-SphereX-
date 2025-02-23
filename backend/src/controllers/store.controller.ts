@@ -190,14 +190,16 @@ export const getUserTools = async (req: Request, res: Response, next: NextFuncti
 
     const tools = await StoreItem.find({ author: userId })
       .sort({ createdAt: -1 })
+      .populate('author', 'name')  // Populate author details
       .lean();
 
     console.log('Found tools:', tools.length);
 
+    // Always return an array, even if empty
     res.json({
       success: true,
       data: {
-        tools
+        tools: tools || []
       }
     });
   } catch (error) {

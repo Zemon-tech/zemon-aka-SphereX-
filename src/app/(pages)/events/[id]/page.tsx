@@ -36,6 +36,7 @@ interface Event {
     name: string;
     avatar: string;
   }>;
+  isUserRegistered: boolean;
 }
 
 interface CountdownTime {
@@ -50,36 +51,51 @@ export default function EventDetailPage() {
   const router = useRouter();
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRegistered, setIsRegistered] = useState(false);
   const { toast } = useToast();
   const [countdown, setCountdown] = useState<CountdownTime>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [isReminderSet, setIsReminderSet] = useState(false);
 
-  useEffect(() => {
-    const fetchEventDetail = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/events/${params.id}`);
-        const data = await response.json();
-        if (data.success) {
-          setEvent(data.data);
-        } else {
-          throw new Error(data.message || 'Failed to fetch event details');
-        }
-      } catch (error) {
-        console.error('Error fetching event detail:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load event details",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+  const fetchEventDetail = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
-    };
+      
+      const response = await fetch(`${API_BASE_URL}/api/events/${params.id}`, {
+        headers
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setEvent(data.data);
+        setIsRegistered(!!data.data.isUserRegistered);
+      } else {
+        throw new Error(data.message || 'Failed to fetch event details');
+      }
+    } catch (error) {
+      console.error('Error fetching event detail:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load event details",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (params.id) {
       fetchEventDetail();
     }
-  }, [params.id, toast]);
+  }, [params.id]);
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -111,26 +127,8 @@ export default function EventDetailPage() {
 
   const handleRegister = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/events/${params.id}/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      const data = await response.json();
-      
-      if (data.success) {
-        toast({
-          title: "Success",
-          description: "Successfully registered for the event",
-        });
-      } else {
-        throw new Error(data.message || 'Failed to register for event');
-      }
-    } catch (error) {
-      console.error('Error registering for event:', error);
-      if (error instanceof Error && error.message.includes('authorization')) {
+      const token = localStorage.getItem('token');
+      if (!token) {
         toast({
           title: "Error",
           description: "Please login to register for the event",
@@ -139,9 +137,45 @@ export default function EventDetailPage() {
         router.push('/auth/login');
         return;
       }
+
+      const endpoint = isRegistered ? 'unregister' : 'register';
+      const response = await fetch(`${API_BASE_URL}/api/events/${params.id}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsRegistered(data.data.isUserRegistered);
+        if (event && data.data) {
+          setEvent({
+            ...event,
+            registrations: data.data.registrations,
+            isUserRegistered: data.data.isUserRegistered
+          });
+        }
+        toast({
+          title: "Success",
+          description: data.message,
+        });
+      }
+    } catch (error) {
+      console.error('Error with event registration:', error);
+      if (error instanceof Error && error.message.includes('authorization')) {
+        toast({
+          title: "Error",
+          description: "Please login to manage event registration",
+          variant: "destructive",
+        });
+        router.push('/auth/login');
+        return;
+      }
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to register for event",
+        description: "Failed to update registration status",
         variant: "destructive",
       });
     }
@@ -320,13 +354,14 @@ export default function EventDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-col md:flex-row gap-4 mt-8">
           <Button 
             size="lg" 
             className="flex-1 md:flex-none"
             onClick={handleRegister}
+            variant={isRegistered ? "destructive" : "default"}
           >
-            Register Now
+            {isRegistered ? 'Unregister' : 'Register Now'}
           </Button>
           <Button
             variant="outline"

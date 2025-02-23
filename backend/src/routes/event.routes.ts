@@ -133,32 +133,32 @@ router.get('/', async (req, res, next) => {
 });
 
 // Get single event
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', auth, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id)) {
       throw new AppError('Invalid event ID', 400);
     }
-
-    const cacheKey = `events:${id}`;
-    const cachedData = await getCache(cacheKey);
-    if (cachedData) {
-      return res.json({ success: true, data: JSON.parse(cachedData) });
-    }
-
-    const event = await Event.findById(id).lean();
+    
+    const event = await Event.findById(id)
+      .populate('organizer', 'name avatar')
+      .lean();
 
     if (!event) {
       throw new AppError('Event not found', 404);
     }
 
-    // Add default organizer data since we're not using User model yet
-    const eventWithOrganizer = {
+    // Check if user is registered for the event
+    let isUserRegistered = false;
+    if (req.user?.id) {
+      const attendeeIds = event.attendees.map((id: any) => id.toString());
+      isUserRegistered = attendeeIds.includes(req.user.id);
+    }
+
+    // Update event with registration status
+    const eventWithRegistrationStatus = {
       ...event,
-      organizer: {
-        name: 'Event Organizer',
-        avatar: '/default-avatar.jpg'
-      }
+      isUserRegistered
     };
 
     // Update clicks
@@ -172,9 +172,9 @@ router.get('/:id', async (req, res, next) => {
       }
     });
 
-    // Cache the result
-    await setCache(cacheKey, JSON.stringify(eventWithOrganizer), CACHE_EXPIRATION);
-    res.json({ success: true, data: eventWithOrganizer });
+    // Clear cache before sending response
+    await clearCache(`events:${id}`);
+    res.json({ success: true, data: eventWithRegistrationStatus });
   } catch (error) {
     next(error);
   }
@@ -247,27 +247,117 @@ router.post('/:id/register', auth, async (req: AuthRequest, res, next) => {
       throw new AppError('Event not found', 404);
     }
 
-    if (event.attendees.includes(req.user?.id)) {
-      throw new AppError('Already registered for this event', 400);
+    // Check if user is already registered using the same method as GET route
+    const isAlreadyRegistered = event.attendees.map(id => id.toString()).includes(req.user?.id);
+
+    // If already registered, just return success with current status
+    if (isAlreadyRegistered) {
+      return res.json({ 
+        success: true, 
+        message: 'Already registered for event',
+        data: {
+          isUserRegistered: true,
+          registrations: event.registrations
+        }
+      });
     }
 
     if (event.capacity && event.attendees.length >= event.capacity) {
       throw new AppError('Event is at full capacity', 400);
     }
 
-    await Event.findByIdAndUpdate(id, {
-      $inc: { registrations: 1 },
-      $push: { 
-        attendees: req.user?.id,
-        'analytics.registrationDates': {
-          date: new Date(),
-          count: 1
+    // Update event with new registration
+    const updatedEvent = await Event.findByIdAndUpdate(
+      id,
+      {
+        $inc: { registrations: 1 },
+        $push: { 
+          attendees: req.user?.id,
+          'analytics.registrationDates': {
+            date: new Date(),
+            count: 1
+          }
         }
+      },
+      { new: true }
+    );
+
+    if (!updatedEvent) {
+      throw new AppError('Failed to update event', 500);
+    }
+
+    // Clear cache after registration
+    await clearCache(`events:${id}`);
+    
+    // Return updated registration status
+    res.json({ 
+      success: true, 
+      message: 'Successfully registered for event',
+      data: {
+        isUserRegistered: true,
+        registrations: updatedEvent.registrations
       }
     });
+  } catch (error) {
+    next(error);
+  }
+});
 
+// Unregister from event
+router.post('/:id/unregister', auth, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id)) {
+      throw new AppError('Invalid event ID', 400);
+    }
+
+    const event = await Event.findById(id);
+    if (!event) {
+      throw new AppError('Event not found', 404);
+    }
+
+    // Check if user is registered
+    const isRegistered = event.attendees.map(id => id.toString()).includes(req.user?.id);
+
+    if (!isRegistered) {
+      return res.json({ 
+        success: true, 
+        message: 'Not registered for this event',
+        data: {
+          isUserRegistered: false,
+          registrations: event.registrations
+        }
+      });
+    }
+
+    // Update event to remove registration
+    const updatedEvent = await Event.findByIdAndUpdate(
+      id,
+      {
+        $inc: { registrations: -1 },
+        $pull: { 
+          attendees: req.user?.id
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedEvent) {
+      throw new AppError('Failed to update event', 500);
+    }
+
+    // Clear cache after unregistration
     await clearCache(`events:${id}`);
-    res.json({ success: true, message: 'Successfully registered for event' });
+    
+    // Return updated registration status
+    res.json({ 
+      success: true, 
+      message: 'Successfully unregistered from event',
+      data: {
+        isUserRegistered: false,
+        registrations: updatedEvent.registrations
+      }
+    });
   } catch (error) {
     next(error);
   }

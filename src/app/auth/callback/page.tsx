@@ -34,14 +34,14 @@ export default function AuthCallback() {
           name: user.user_metadata.full_name || user.user_metadata.name || user.user_metadata.user_name,
           email: user.email,
           avatar: user.user_metadata.avatar_url,
-          github: user.user_metadata.user_name
+          github_username: user.user_metadata.user_name,
+          github: user.user_metadata.user_name,
+          role: 'user', // Add default role
+          _id: user.id, // Add user ID from Supabase
         };
 
-        // Validate required fields
-        if (!githubData.name || !githubData.email) {
-          console.error('Missing required GitHub data:', githubData);
-          throw new Error('Missing required GitHub user data');
-        }
+        // Log the data being sent to the backend
+        console.log('Data being sent to backend:', githubData);
 
         // Sync with MongoDB
         const response = await fetch(`${API_BASE_URL}/api/auth/github/sync`, {
@@ -53,15 +53,26 @@ export default function AuthCallback() {
         });
 
         const data = await response.json();
+        console.log('Response from backend:', data);
 
         if (!response.ok) {
           console.error('MongoDB sync error:', data);
           throw new Error(data.message || 'Failed to sync with MongoDB');
         }
 
-        // Store token and user data
+        // Store token and user data - ensure we're storing the correct structure
+        const userData = {
+          _id: data.data.user._id || data.data.user.id,
+          name: data.data.user.name,
+          email: data.data.user.email,
+          avatar: data.data.user.avatar,
+          github_username: data.data.user.github_username,
+          github: data.data.user.github,
+          role: data.data.user.role || 'user',
+        };
+
         localStorage.setItem('token', data.data.token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+        localStorage.setItem('user', JSON.stringify(userData));
 
         // Dispatch auth state change event
         const event = new CustomEvent('auth-state-change', { 

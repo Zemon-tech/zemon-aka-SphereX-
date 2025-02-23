@@ -5,6 +5,7 @@ import {
   addStoreItem,
   addReview,
   deleteStoreItem,
+  getUserTools,
 } from '../controllers/store.controller';
 import { validateStoreItem, validateReview } from '../validators/store.validator';
 import { auth } from '../middleware/auth.middleware';
@@ -56,9 +57,11 @@ const validateReviewMiddleware = (req: AuthRequest, res: any, next: any) => {
 
 // Public routes
 router.get('/', getAllStoreItems);
-router.get('/:id', getStoreItemDetails);
 
 // Protected routes - require authentication
+// Note: /user route must come BEFORE /:id to prevent conflicts
+router.get('/user', auth, getUserTools);
+router.get('/:id', getStoreItemDetails);
 router.post('/', auth, validateStoreItemMiddleware, addStoreItem);
 router.post('/:id/review', auth, validateReviewMiddleware, addReview);
 router.delete('/:id', auth, deleteStoreItem);

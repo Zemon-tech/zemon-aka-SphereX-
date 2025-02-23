@@ -177,4 +177,31 @@ export const deleteStoreItem = async (req: Request, res: Response, next: NextFun
     logger.error('Error in deleteStoreItem:', error);
     next(error);
   }
+};
+
+export const getUserTools = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user?.id;
+    console.log('Fetching tools for user:', userId);
+
+    if (!userId) {
+      throw new AppError('User must be authenticated', 401);
+    }
+
+    const tools = await StoreItem.find({ author: userId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    console.log('Found tools:', tools.length);
+
+    res.json({
+      success: true,
+      data: {
+        tools
+      }
+    });
+  } catch (error) {
+    console.error('Error in getUserTools:', error);
+    next(error);
+  }
 }; 

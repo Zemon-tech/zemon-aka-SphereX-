@@ -256,9 +256,12 @@ export default function StorePage() {
                   id: item._id,
                   title: item.name,
                   description: item.description,
-                  image: item.thumbnail,
-                  developer: item.author || { _id: 'unknown', name: 'Unknown Developer' },
+                  thumbnail: item.thumbnail,
                   url: item.url,
+                  developer: {
+                    _id: item.author?._id || 'unknown',
+                    name: item.author?.name || 'Unknown Developer'
+                  }
                 }}
                 currentUserId={currentUserId}
                 onDelete={fetchStoreItems}

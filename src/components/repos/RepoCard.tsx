@@ -1,106 +1,89 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Star, GitFork, Eye, GitBranch, Code, MessageCircle, GitPullRequest } from "lucide-react";
+import { Star, GitFork, Eye, GitBranch, Code, MessageCircle, GitPullRequest, ExternalLink, Github } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface RepoCardProps {
-  repo: {
-    id: string;
+  id: string;
+  name: string;
+  description: string;
+  stars: number;
+  forks: number;
+  language: string;
+  githubUrl: string;
+  updatedAt: string;
+  creator: {
     name: string;
-    owner: string;
-    description: string;
-    stars: number;
-    forks: number;
-    watchers: number;
-    language: string;
-    topics: string[];
-    openIssues: number;
-    pullRequests: number;
-    lastUpdated: string;
+    id: string;
   };
+  onGitHubClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
-export default function RepoCard({ repo }: RepoCardProps) {
+export default function RepoCard({
+  id,
+  name,
+  description,
+  stars,
+  forks,
+  language,
+  githubUrl,
+  updatedAt,
+  creator,
+  onGitHubClick
+}: RepoCardProps) {
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="group rounded-xl border bg-card p-6 hover:shadow-lg transition-all duration-300"
-    >
-      <Link href={`/repos/${repo.id}`} className="block">
-        <div className="flex items-start justify-between mb-4">
+    <Card className="hover:border-primary/50 transition-colors">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-xl font-semibold group-hover:text-primary transition-colors">
-              {repo.name}
-            </h2>
-            <p className="text-sm text-muted-foreground">{repo.owner}</p>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            {repo.language}
-          </Badge>
-        </div>
-
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-          {repo.description}
-        </p>
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Open Issues</span>
-              <span className="font-medium">{repo.openIssues}</span>
-            </div>
-            <Progress value={Math.min((repo.openIssues / 100) * 100, 100)} className="h-1" />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Pull Requests</span>
-              <span className="font-medium">{repo.pullRequests}</span>
-            </div>
-            <Progress value={Math.min((repo.pullRequests / 50) * 100, 100)} className="h-1" />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          {repo.topics.slice(0, 4).map((topic) => (
-            <Badge
-              key={topic}
-              variant="secondary"
-              className="bg-primary/10 hover:bg-primary/20 transition-colors"
+            <Link
+              href={`/repos/${id}`}
+              className="text-lg font-semibold hover:text-primary transition-colors"
             >
-              {topic}
-            </Badge>
-          ))}
-          {repo.topics.length > 4 && (
-            <Badge variant="outline" className="text-muted-foreground">
-              +{repo.topics.length - 4} more
-            </Badge>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-4 text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 text-yellow-500" />
-              <span>{repo.stars}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <GitFork className="w-4 h-4" />
-              <span>{repo.forks}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
-              <span>{repo.watchers}</span>
+              {name}
+            </Link>
+            <p className="text-sm text-muted-foreground mt-1">
+              by {creator.name}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              {description}
+            </p>
+            <div className="flex items-center gap-4 mt-4">
+              <Badge variant="secondary">{language}</Badge>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Star className="w-4 h-4" />
+                {stars}
+              </div>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <GitFork className="w-4 h-4" />
+                {forks}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Updated {new Date(updatedAt).toLocaleDateString()}
+              </div>
             </div>
           </div>
-          <time className="text-xs text-muted-foreground">
-            Updated {new Date(repo.lastUpdated).toLocaleDateString()}
-          </time>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onGitHubClick}
+            >
+              <Github className="w-4 h-4" />
+            </Button>
+            <Link href={`/repos/${id}`}>
+              <Button variant="ghost" size="icon">
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
-      </Link>
-    </motion.article>
+      </CardContent>
+    </Card>
   );
 } 

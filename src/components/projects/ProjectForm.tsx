@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { X, Loader2, Code, Link as LinkIcon, Github, Tag, FileText, Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ProjectFormProps {
   initialData?: {
@@ -13,7 +14,7 @@ interface ProjectFormProps {
     demoUrl?: string;
     tags: string[];
   };
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (formData: FormData) => void;
   onCancel: () => void;
   isEdit?: boolean;
 }
@@ -21,17 +22,10 @@ interface ProjectFormProps {
 export default function ProjectForm({ initialData, onSubmit, onCancel, isEdit = false }: ProjectFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      const formData = new FormData(e.currentTarget);
-      await onSubmit(formData);
-    } catch (error) {
-      console.error("Error submitting form:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    const formData = new FormData(e.currentTarget);
+    onSubmit(formData);
   };
 
   return (
@@ -101,22 +95,14 @@ export default function ProjectForm({ initialData, onSubmit, onCancel, isEdit = 
                   Primary Language
                 </span>
               </label>
-              <select
+              <input
+                type="text"
                 name="language"
                 defaultValue={initialData?.language}
                 required
                 className="w-full px-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all"
-              >
-                <option value="">Select Language</option>
-                <option value="javascript">JavaScript</option>
-                <option value="typescript">TypeScript</option>
-                <option value="python">Python</option>
-                <option value="java">Java</option>
-                <option value="go">Go</option>
-                <option value="rust">Rust</option>
-                <option value="cpp">C++</option>
-                <option value="other">Other</option>
-              </select>
+                placeholder="e.g., JavaScript, Python"
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -129,7 +115,7 @@ export default function ProjectForm({ initialData, onSubmit, onCancel, isEdit = 
                 </label>
                 <input
                   type="url"
-                  name="repoUrl"
+                  name="github_url"
                   defaultValue={initialData?.repoUrl}
                   required
                   className="w-full px-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all"
@@ -172,21 +158,17 @@ export default function ProjectForm({ initialData, onSubmit, onCancel, isEdit = 
 
             <div className="pt-6 border-t">
               <div className="flex justify-end gap-4">
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  className="px-4 py-2 rounded-lg border hover:bg-accent transition-colors"
-                >
+                <Button variant="outline" onClick={onCancel}>
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={isLoading}
                   className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
                   {isLoading && <Loader2 size={18} className="animate-spin" />}
                   {isEdit ? "Update Project" : "Add Project"}
-                </button>
+                </Button>
               </div>
             </div>
           </form>

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { auth } from '../middleware/auth.middleware';
 import {
   getRepos,
   getRepoDetails,
@@ -7,17 +8,23 @@ import {
   deleteRepo,
   likeRepo,
   addComment,
+  getUserRepos,
 } from '../controllers/repo.controller';
 
 const router = Router();
 
+// Get user's repos (protected route) - This must come BEFORE the :id route
+router.get('/user', auth, getUserRepos);
+
 // All routes are public for now
 router.get('/', getRepos);
 router.get('/:id', getRepoDetails);
-router.post('/', addRepo);
-router.put('/:id', updateRepo);
-router.delete('/:id', deleteRepo);
-router.post('/:id/like', likeRepo);
-router.post('/:id/comments', addComment);
+
+// Protected routes
+router.post('/', auth, addRepo);
+router.put('/:id', auth, updateRepo);
+router.delete('/:id', auth, deleteRepo);
+router.post('/:id/like', auth, likeRepo);
+router.post('/:id/comments', auth, addComment);
 
 export default router; 

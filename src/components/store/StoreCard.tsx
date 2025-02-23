@@ -20,7 +20,7 @@ interface Tool {
   id: string;
   title: string;
   description: string;
-  image: string;
+  thumbnail: string;
   url: string;
   developer: {
     _id: string;
@@ -132,7 +132,7 @@ export default function StoreCard({ tool, currentUserId, onDelete }: StoreCardPr
                 {/* Logo */}
                 <div className="relative w-14 h-14">
                   <img
-                    src={tool.image}
+                    src={tool.thumbnail}
                     alt={tool.title}
                     className="w-full h-full rounded-[18px] object-cover shadow-sm group-hover:shadow-md transition-all duration-300"
                   />

@@ -7,7 +7,6 @@ import { fetchGitHubRepo, validateGitHubUrl } from '../utils/github';
 import logger from '../utils/logger';
 
 const CACHE_EXPIRATION = 3600; // 1 hour
-const DEFAULT_USER_ID = new Types.ObjectId('65d8c25a3d96b6c594ad7d3c'); // Temporary static user ID for testing
 
 export const getRepos = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -23,6 +22,7 @@ export const getRepos = async (req: Request, res: Response, next: NextFunction) 
 
     const skip = (page - 1) * limit;
     const repos = await Repo.find()
+      .populate('added_by', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -76,7 +76,12 @@ export const getRepoDetails = async (req: Request, res: Response, next: NextFunc
 
 export const addRepo = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { github_url } = req.body;
+    const { github_url, description, language, tags } = req.body;
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      throw new AppError('User must be authenticated to add a repository', 401);
+    }
 
     if (!github_url) {
       throw new AppError('GitHub URL is required', 400);
@@ -86,40 +91,33 @@ export const addRepo = async (req: Request, res: Response, next: NextFunction) =
 
     const urlData = await validateGitHubUrl(github_url);
     if (!urlData) {
-      throw new AppError('Invalid GitHub URL format. Please provide a valid GitHub repository URL', 400);
+      throw new AppError('Invalid GitHub URL format', 400);
     }
-
-    logger.info(`Validated GitHub URL. Owner: ${urlData.owner}, Repo: ${urlData.repo}`);
 
     const existingRepo = await Repo.findOne({ github_url });
     if (existingRepo) {
-      throw new AppError('Repository already exists in the database', 400);
+      throw new AppError('Repository already exists', 400);
     }
 
-    logger.info('Fetching repository data from GitHub...');
+    // Fetch GitHub data
     const githubData = await fetchGitHubRepo(urlData.owner, urlData.repo);
 
-    logger.info('Creating new repository document...');
+    // Create repo with combined data
     const repo = new Repo({
       ...githubData,
-      added_by: DEFAULT_USER_ID,
+      description: description || githubData.description, // Use provided description or fallback to GitHub
+      language: language || '', // Just use the provided language
+      tags: tags || [],
+      added_by: userId,
     });
 
-    logger.info('Saving repository to database...');
     await repo.save();
+    const populatedRepo = await repo.populate('added_by', 'name');
     
-    logger.info('Clearing cache...');
     await clearCache('repos:*');
-    
-    logger.info('Repository added successfully');
-    res.status(201).json({ success: true, data: repo });
-  } catch (error: any) {
-    logger.error('Error in addRepo:', error);
-    if (error instanceof AppError) {
-      next(error);
-    } else {
-      next(new AppError(error.message || 'Failed to add repository', error.status || 500));
-    }
+    res.status(201).json({ success: true, data: populatedRepo });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -183,6 +181,13 @@ export const deleteRepo = async (req: Request, res: Response, next: NextFunction
 export const likeRepo = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    // Get user ID from authenticated request
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      throw new AppError('User must be authenticated to like a repository', 401);
+    }
+
     if (!Types.ObjectId.isValid(id)) {
       throw new AppError('Invalid repository ID', 400);
     }
@@ -192,9 +197,9 @@ export const likeRepo = async (req: Request, res: Response, next: NextFunction) 
       throw new AppError('Repository not found', 404);
     }
 
-    const userIndex = repo.likes.findIndex(like => like.toString() === DEFAULT_USER_ID.toString());
+    const userIndex = repo.likes.findIndex(like => like.toString() === userId.toString());
     if (userIndex === -1) {
-      repo.likes.push(DEFAULT_USER_ID);
+      repo.likes.push(userId);
     } else {
       repo.likes.splice(userIndex, 1);
     }
@@ -211,6 +216,12 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
   try {
     const { id } = req.params;
     const { content } = req.body;
+    // Get user ID from authenticated request
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      throw new AppError('User must be authenticated to comment', 401);
+    }
 
     if (!Types.ObjectId.isValid(id)) {
       throw new AppError('Invalid repository ID', 400);
@@ -226,7 +237,7 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
     }
 
     repo.comments.push({
-      user: DEFAULT_USER_ID,
+      user: userId,
       content,
       createdAt: new Date(),
     });
@@ -239,4 +250,27 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
   } catch (error) {
     next(error);
   }
-}; 
+};
+
+export const getUserRepos = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      throw new AppError('User must be authenticated', 401);
+    }
+
+    const repos = await Repo.find({ added_by: userId })
+      .populate('added_by', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({
+      success: true,
+      data: {
+        repos
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

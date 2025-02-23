@@ -10,6 +10,7 @@ import SearchAndFilter from "@/components/layout/SearchAndFilter";
 import { Button } from "@/components/ui/button";
 import ProjectForm from "@/components/projects/ProjectForm";
 import { useToast } from "@/components/ui/use-toast";
+import RepoCard from "@/components/repos/RepoCard";
 
 interface Repository {
   _id: string;
@@ -18,13 +19,19 @@ interface Repository {
   github_url: string;
   stars: number;
   forks: number;
+  language: string;
   branches: number;
   contributors: Array<{
     login: string;
     avatar_url: string;
     contributions: number;
   }>;
-  thumbnail_url: string;
+  added_by: {
+    _id: string;
+    name: string;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 
 export default function ReposPage() {
@@ -33,6 +40,8 @@ export default function ReposPage() {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [searchValue, setSearchValue] = useState("");
+  const [filterValue, setFilterValue] = useState("all");
 
   const filterOptions = [
     { label: "All Languages", value: "all" },
@@ -46,10 +55,27 @@ export default function ReposPage() {
 
   const fetchRepos = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/repos`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/repos`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        }
+      });
+
       const data = await response.json();
       if (data.success) {
-        setRepos(data.data.repos);
+        // The backend is already populating added_by with name, so we can use it directly
+        const reposWithCreators = data.data.repos.map((repo: Repository) => ({
+          ...repo,
+          added_by: {
+            _id: repo.added_by?._id || 'unknown',
+            name: repo.added_by?.name || 'Unknown Developer'
+          }
+        }));
+
+        console.log('Repos with creators:', reposWithCreators);
+        setRepos(reposWithCreators);
       }
     } catch (error) {
       console.error('Error fetching repositories:', error);
@@ -70,13 +96,30 @@ export default function ReposPage() {
   const handleSubmitProject = async (formData: FormData) => {
     try {
       setIsLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      // Log the data being sent
+      console.log('Submitting data:', {
+        github_url: formData.get('github_url'),
+        description: formData.get('description'),
+        language: formData.get('language'),
+        tags: formData.get('tags')
+      });
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/repos`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          github_url: formData.get('repoUrl'),
+          github_url: formData.get('github_url'),
+          description: formData.get('description'),
+          language: formData.get('language'),
+          tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim()),
         }),
       });
 
@@ -127,6 +170,16 @@ export default function ReposPage() {
     setShowAddForm(true);
   };
 
+  const handleSearch = (value: string) => {
+    setSearchValue(value);
+    // Add your search logic here
+  };
+
+  const handleFilterChange = (value: string) => {
+    setFilterValue(value);
+    // Add your filter logic here
+  };
+
   return (
     <PageContainer className="py-6">
       <PageHeader
@@ -141,11 +194,11 @@ export default function ReposPage() {
       />
 
       <SearchAndFilter
-        searchPlaceholder="Search repositories..."
-        searchValue=""
-        onSearchChange={() => {}}
-        filterValue="all"
-        onFilterChange={() => {}}
+        placeholder="Search repositories..."
+        value={searchValue}
+        onChange={handleSearch}
+        filter={filterValue}
+        onFilterChange={handleFilterChange}
         filterOptions={filterOptions}
         extraActions={
           <div className="flex gap-2">
@@ -171,8 +224,8 @@ export default function ReposPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {isLoading ? (
           // Loading skeleton
-          [...Array(6)].map((_, i) => (
-            <div key={i} className="p-6 rounded-lg border bg-card animate-pulse">
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={`skeleton-${i}`} className="p-6 rounded-lg border bg-card animate-pulse">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-10 w-10 bg-muted rounded"></div>
                 <div className="flex-1">
@@ -193,47 +246,25 @@ export default function ReposPage() {
           ))
         ) : repos.length > 0 ? (
           repos.map((repo) => (
-            <div 
-              key={repo._id} 
-              className="p-6 rounded-lg border bg-card hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => handleCardClick(repo._id)}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <img
-                  src="/Z.jpg"
-                  alt={repo.name}
-                  className="h-10 w-10 rounded"
-                />
-                <div>
-                  <h3 className="font-semibold">{repo.name}</h3>
-                  <a
-                    href={repo.github_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-muted-foreground hover:text-primary"
-                    onClick={(e) => handleGitHubClick(e, repo.github_url)}
-                  >
-                    View on GitHub
-                  </a>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {repo.description}
-              </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="flex items-center gap-1">
-                    <Star className="w-4 h-4" />
-                    {repo.stars}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <GitBranch className="w-4 h-4" />
-                    {repo.forks}
-                  </span>
-                  <span>{repo.contributors.length} contributors</span>
-                </div>
-              </div>
-            </div>
+            <RepoCard
+              key={repo._id}
+              id={repo._id}
+              name={repo.name}
+              description={repo.description}
+              stars={repo.stars}
+              forks={repo.forks}
+              language={repo.language || 'Unknown'}
+              githubUrl={repo.github_url}
+              updatedAt={repo.updatedAt || repo.createdAt}
+              creator={{ 
+                name: repo.added_by?.name || 'Unknown Developer',
+                id: repo.added_by?._id
+              }}
+              onGitHubClick={(e) => {
+                e.preventDefault();
+                window.open(repo.github_url, '_blank');
+              }}
+            />
           ))
         ) : (
           <div className="col-span-full text-center py-12 text-muted-foreground">

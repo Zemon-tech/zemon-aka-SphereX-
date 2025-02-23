@@ -30,6 +30,7 @@ interface EventCardProps {
 
 export default function EventCard({ event, onDelete }: EventCardProps) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function EventCard({ event, onDelete }: EventCardProps) {
       try {
         const tokenData = JSON.parse(atob(token.split('.')[1]));
         setCurrentUserId(tokenData.id);
+        setIsAdmin(tokenData.role === 'admin');
       } catch (error) {
         console.error('Error decoding token:', error);
       }
@@ -49,7 +51,7 @@ export default function EventCard({ event, onDelete }: EventCardProps) {
     setShowDeleteConfirm(true);
   };
 
-  const isAuthor = currentUserId === event.organizer?._id;
+  const isAuthorOrAdmin = currentUserId === event.organizer?._id || isAdmin;
 
   return (
     <>
@@ -59,7 +61,7 @@ export default function EventCard({ event, onDelete }: EventCardProps) {
         className="group relative rounded-lg border bg-card overflow-hidden hover:shadow-lg transition-shadow"
       >
         {/* Delete Button */}
-        {isAuthor && (
+        {isAuthorOrAdmin && (
           <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button
               onClick={handleDeleteClick}

@@ -1,10 +1,17 @@
 import { Router } from 'express';
 import { Types } from 'mongoose';
 import News from '../models/news.model';
-import { auth, AuthRequest } from '../middleware/auth.middleware';
+import { auth, AuthRequest, adminOrOwnerAuth } from '../middleware/auth.middleware';
 import { setCache, getCache, deleteCache, clearCache } from '../utils/redis';
 import logger from '../utils/logger';
 import { AppError } from '../utils/errors';
+
+// Extend AuthRequest to include model
+declare module '../middleware/auth.middleware' {
+  interface AuthRequest {
+    model?: any;
+  }
+}
 
 const router = Router();
 const CACHE_EXPIRATION = 3600; // 1 hour
@@ -18,25 +25,23 @@ router.post('/', auth, async (req: AuthRequest, res, next) => {
       throw new AppError('User not authenticated', 401);
     }
 
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      throw new AppError('Only admin users can create news articles', 403);
+    }
+
     const news = new News({
       title,
       content,
       excerpt,
       category,
       image,
-      tags,
-      author: req.user.id
+      tags
     });
 
     const savedNews = await news.save();
-    
-    // Populate author information
-    const populatedNews = await News.findById(savedNews._id)
-      .populate('author', 'name avatar')
-      .lean();
-
     await clearCache('news:*');
-    res.status(201).json({ success: true, data: populatedNews });
+    res.status(201).json({ success: true, data: savedNews });
   } catch (error) {
     next(error);
   }
@@ -135,15 +140,16 @@ router.put('/:id', auth, async (req: AuthRequest, res, next) => {
       throw new AppError('News article not found', 404);
     }
 
-    if (news.author.toString() !== req.user?.id) {
-      throw new AppError('Not authorized to update this news article', 403);
+    // Check if user is admin
+    if (req.user?.role !== 'admin') {
+      throw new AppError('Only admin users can update news articles', 403);
     }
 
     const updatedNews = await News.findByIdAndUpdate(
       id,
       { ...req.body, updatedAt: Date.now() },
       { new: true }
-    ).populate('author', 'name avatar');
+    );
 
     await clearCache(`news:${id}`);
     await clearCache('news:all:*');
@@ -161,15 +167,11 @@ router.delete('/:id', auth, async (req: AuthRequest, res, next) => {
       throw new AppError('Invalid news ID', 400);
     }
 
-    const news = await News.findById(id);
-    if (!news) {
-      throw new AppError('News article not found', 404);
+    // Check if user is admin
+    if (req.user?.role !== 'admin') {
+      throw new AppError('Only admin users can delete news articles', 403);
     }
-
-    if (news.author.toString() !== req.user?.id) {
-      throw new AppError('Not authorized to delete this news article', 403);
-    }
-
+    
     await News.findByIdAndDelete(id);
     await clearCache(`news:${id}`);
     await clearCache('news:all:*');

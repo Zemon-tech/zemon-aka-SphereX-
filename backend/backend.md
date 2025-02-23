@@ -884,3 +884,18 @@ The profile update endpoint now supports direct password updates without requiri
 - Passwords are hashed using bcrypt with a salt factor of 10
 - The hashed password is only included in the response for development purposes and should be removed in production
 - The frontend stores the hashed password only temporarily for display purposes 
+
+### Enhanced Deletion Functionality
+- Added admin deletion privileges across multiple content types
+- Admins can now delete any content regardless of ownership:
+  - News articles
+  - Store items (tools)
+  - Events
+  - Ideas
+  - Resources
+- Non-admin users can still only delete their own content
+- Implementation details:
+  - Added `adminOrOwnerAuth` middleware to handle authorization
+  - Updated all deletion endpoints to use the new middleware
+  - Maintains existing deletion rules for non-admin users
+  - Uses MongoDB `role` field to identify admin users 

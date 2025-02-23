@@ -19,33 +19,28 @@ interface NewsCardProps {
     image: string;
     excerpt: string;
     views: number;
-    author?: {
-      _id?: string;
-      name: string;
-      avatar?: string;
-    };
   };
   onDelete?: () => void;
 }
 
 export default function NewsCard({ news, onDelete }: NewsCardProps) {
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
         const tokenData = JSON.parse(atob(token.split('.')[1]));
-        setCurrentUserId(tokenData.id);
+        setIsAdmin(tokenData.role === 'admin');
       } catch (error) {
         console.error('Error decoding token:', error);
       }
     }
-  }, [news.author?._id]);
+  }, []);
 
   const handleDelete = async () => {
     try {
@@ -122,8 +117,8 @@ export default function NewsCard({ news, onDelete }: NewsCardProps) {
             </Badge>
           </div>
 
-          {/* Delete Button - Only show if user is the author */}
-          {news.author && currentUserId === news.author._id && (
+          {/* Delete Button - Show only if user is admin */}
+          {isAdmin && (
             <div className="absolute top-4 right-4">
               <Button
                 variant="destructive"

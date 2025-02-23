@@ -73,4 +73,55 @@ export const adminAuth = async (
   } catch (error) {
     res.status(403).json({ error: 'Access denied.' });
   }
+};
+
+export const adminOrOwnerAuth = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+  ownerField: string = 'author'
+) => {
+  try {
+    const userId = req.user?.id;
+    const itemId = req.params.id;
+    const Model = req.model; // Model should be attached by the route handler
+
+    if (!userId || !itemId || !Model) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid request parameters'
+      });
+    }
+
+    // If user is admin, allow the operation
+    if (req.user?.role === 'admin') {
+      return next();
+    }
+
+    // If not admin, check ownership
+    const item = await Model.findById(itemId);
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found'
+      });
+    }
+
+    // Check if the user is the owner using the specified owner field
+    const ownerId = item[ownerField]?.toString();
+    if (ownerId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You must be an admin or the owner to perform this operation.'
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin/Owner auth middleware error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
 }; 

@@ -52,6 +52,7 @@ export default function EventsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
   const [filterValue, setFilterValue] = useState("all");
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
   const filterOptions = [
@@ -62,6 +63,18 @@ export default function EventsPage() {
     { label: "Meetups", value: "meetup" },
     { label: "Webinars", value: "webinar" },
   ];
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        setIsAdmin(tokenData.role === 'admin');
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
 
   const fetchEvents = async () => {
     try {
@@ -215,18 +228,21 @@ export default function EventsPage() {
         title="Tech Events"
         description="Discover and participate in exciting tech events"
         action={
-          <Button className="gap-2" onClick={() => setShowAddForm(true)}>
-            <Plus className="w-4 h-4" />
-            Create Event
-          </Button>
+          isAdmin && (
+            <Button className="gap-2" onClick={() => setShowAddForm(true)}>
+              <Plus className="w-4 h-4" />
+              Create Event
+            </Button>
+          )
         }
       />
 
       <SearchAndFilter
-        searchQuery={searchValue}
-        onSearchChange={setSearchValue}
-        selectedCategory={filterValue}
-        onCategoryChange={setFilterValue}
+        value={searchValue}
+        onChange={setSearchValue}
+        filter={filterValue}
+        onFilterChange={setFilterValue}
+        filterOptions={filterOptions}
       />
 
       <div className="flex justify-end mt-4">

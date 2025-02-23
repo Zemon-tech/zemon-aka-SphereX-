@@ -96,7 +96,6 @@ export interface INews extends Document {
   title: string;
   content: string;
   excerpt: string;
-  author: IUser['_id'];
   category: string;
   image: string;
   tags: string[];

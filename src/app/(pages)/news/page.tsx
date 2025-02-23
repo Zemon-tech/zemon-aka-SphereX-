@@ -21,11 +21,6 @@ interface NewsArticle {
   category: string;
   image: string;
   tags: string[];
-  author: {
-    _id: string;
-    name: string;
-    avatar?: string;
-  };
   createdAt: string;
   views: number;
   likes: string[];
@@ -38,6 +33,7 @@ export default function NewsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
   const filterOptions = [
@@ -79,6 +75,18 @@ export default function NewsPage() {
     fetchNews();
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        setIsAdmin(tokenData.role === 'admin');
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
+
   const handleSubmitNews = async (formData: FormData) => {
     try {
       // Get auth token
@@ -95,7 +103,14 @@ export default function NewsPage() {
 
       // Get user data from token
       const tokenData = JSON.parse(atob(token.split('.')[1]));
-      const userId = tokenData.id;
+      if (tokenData.role !== 'admin') {
+        toast({
+          title: "Permission Denied",
+          description: "Only admin users can create news articles",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const newsData = {
         title: formData.get('title'),
@@ -103,8 +118,7 @@ export default function NewsPage() {
         excerpt: formData.get('content')?.toString().slice(0, 150) + '...',
         category: formData.get('category'),
         image: formData.get('image'),
-        tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim()),
-        author: userId  // Add the author ID
+        tags: formData.get('tags')?.toString().split(',').map(tag => tag.trim())
       };
 
       console.log('Submitting news with data:', newsData);  // Debug log
@@ -158,18 +172,27 @@ export default function NewsPage() {
         title="Tech News"
         description="Stay updated with the latest developments in the tech world"
         action={
-          <Button className="gap-2" onClick={() => setShowAddForm(true)}>
-            <Plus className="w-4 h-4" />
-            Submit News
-          </Button>
+          isAdmin && (
+            <Button className="gap-2" onClick={() => setShowAddForm(true)}>
+              <Plus className="w-4 h-4" />
+              Submit News
+            </Button>
+          )
         }
       />
 
       <SearchAndFilter
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
+        value={searchQuery}
+        onChange={setSearchQuery}
+        filter={selectedCategory}
+        onFilterChange={setSelectedCategory}
+        filterOptions={[
+          { label: "All Categories", value: "all" },
+          { label: "Framework Updates", value: "Framework Updates" },
+          { label: "Security", value: "Security" },
+          { label: "Community", value: "Community" },
+          { label: "Tutorials", value: "Tutorials" },
+        ]}
       />
 
       {/* News Articles Grid */}
@@ -190,12 +213,7 @@ export default function NewsPage() {
                   date: new Date(article.createdAt).toLocaleDateString(),
                   image: article.image || '/placeholder-news.jpg',
                   excerpt: article.excerpt,
-                  views: article.views,
-                  author: article.author ? {
-                    _id: article.author._id,
-                    name: article.author.name || 'Anonymous',
-                    avatar: article.author.avatar
-                  } : undefined
+                  views: article.views
                 }}
                 onDelete={() => {
                   // Refresh the news list after deletion

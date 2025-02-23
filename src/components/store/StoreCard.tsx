@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -37,7 +37,20 @@ interface StoreCardProps {
 export default function StoreCard({ tool, currentUserId, onDelete }: StoreCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        setIsAdmin(tokenData.role === 'admin');
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
 
   const handleVisitClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -47,11 +60,11 @@ export default function StoreCard({ tool, currentUserId, onDelete }: StoreCardPr
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    // Check if user is the creator of the tool
-    if (currentUserId !== tool.developer._id) {
+    // Check if user is the creator or an admin
+    if (currentUserId !== tool.developer._id && !isAdmin) {
       toast({
         title: "Permission Denied",
-        description: "You are not authorized to delete this tool. Only the creator can delete it.",
+        description: "You are not authorized to delete this tool. Only the creator or an admin can delete it.",
         variant: "destructive",
       });
       return;
@@ -158,7 +171,7 @@ export default function StoreCard({ tool, currentUserId, onDelete }: StoreCardPr
                 >
                   <ExternalLink className="w-4 h-4" />
                 </Button>
-                {currentUserId === tool.developer._id && (
+                {(currentUserId === tool.developer._id || isAdmin) && (
                   <Button
                     variant="outline"
                     size="icon"

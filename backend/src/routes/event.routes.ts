@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import { Types } from 'mongoose';
 import Event from '../models/event.model';
-import { auth, AuthRequest } from '../middleware/auth.middleware';
+import { auth, AuthRequest, adminOrOwnerAuth } from '../middleware/auth.middleware';
 import { setCache, getCache, deleteCache, clearCache } from '../utils/redis';
 import logger from '../utils/logger';
 import { AppError } from '../utils/errors';
 import ExcelJS from 'exceljs';
+
+// Extend AuthRequest to include model
+declare module '../middleware/auth.middleware' {
+  interface AuthRequest {
+    model?: any;
+  }
+}
 
 const router = Router();
 const CACHE_EXPIRATION = 3600; // 1 hour
@@ -15,6 +22,11 @@ router.post('/', auth, async (req: AuthRequest, res, next) => {
   try {
     if (!req.user?.id) {
       throw new AppError('User not authenticated', 401);
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      throw new AppError('Only admin users can create events', 403);
     }
 
     const eventData = {
@@ -207,19 +219,16 @@ router.delete('/:id', auth, async (req: AuthRequest, res, next) => {
       throw new AppError('Invalid event ID', 400);
     }
 
-    const event = await Event.findById(id);
-    if (!event) {
-      throw new AppError('Event not found', 404);
-    }
-
-    if (event.organizer.toString() !== req.user?.id) {
-      throw new AppError('Not authorized to delete this event', 403);
-    }
-
-    await Event.findByIdAndDelete(id);
-    await clearCache(`events:${id}`);
-    await clearCache('events:*');
-    res.json({ success: true, message: 'Event deleted successfully' });
+    // Attach the model to the request for the adminOrOwnerAuth middleware
+    req.model = Event;
+    
+    // Use the adminOrOwnerAuth middleware with 'organizer' field
+    await adminOrOwnerAuth(req, res, async () => {
+      await Event.findByIdAndDelete(id);
+      await clearCache(`events:${id}`);
+      await clearCache('events:*');
+      res.json({ success: true, message: 'Event deleted successfully' });
+    }, 'organizer'); // Note: using 'organizer' as the owner field
   } catch (error) {
     next(error);
   }

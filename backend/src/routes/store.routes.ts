@@ -8,12 +8,18 @@ import {
   getUserTools,
 } from '../controllers/store.controller';
 import { validateStoreItem, validateReview } from '../validators/store.validator';
-import { auth } from '../middleware/auth.middleware';
-import { AuthRequest } from '../middleware/auth.middleware';
+import { auth, AuthRequest, adminOrOwnerAuth } from '../middleware/auth.middleware';
 import Store from '../models/store.model';
 import { AppError } from '../utils/errors';
 import { Types } from 'mongoose';
 import { clearCache } from '../utils/redis';
+
+// Extend AuthRequest to include model
+declare module '../middleware/auth.middleware' {
+  interface AuthRequest {
+    model?: any;
+  }
+}
 
 const router = Router();
 
@@ -64,7 +70,27 @@ router.get('/user', auth, getUserTools);
 router.get('/:id', getStoreItemDetails);
 router.post('/', auth, validateStoreItemMiddleware, addStoreItem);
 router.post('/:id/review', auth, validateReviewMiddleware, addReview);
-router.delete('/:id', auth, deleteStoreItem);
+router.delete('/:id', auth, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id)) {
+      throw new AppError('Invalid store item ID', 400);
+    }
+
+    // Attach the model to the request for the adminOrOwnerAuth middleware
+    req.model = Store;
+    
+    // Use the adminOrOwnerAuth middleware with 'author' field
+    await adminOrOwnerAuth(req, res, async () => {
+      await Store.findByIdAndDelete(id);
+      await clearCache(`store:${id}`);
+      await clearCache('store:*');
+      res.json({ success: true, message: 'Store item deleted successfully' });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Add images to tool
 router.put('/:id/images', auth, async (req: AuthRequest, res, next) => {

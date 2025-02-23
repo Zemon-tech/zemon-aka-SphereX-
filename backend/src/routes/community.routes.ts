@@ -2,8 +2,14 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Idea, { IComment } from '../models/idea.model';
 import Resource, { ResourceType } from '../models/resource.model';
-import { auth } from '../middleware/auth.middleware';
-import { AuthRequest } from '../middleware/auth.middleware';
+import { auth, AuthRequest, adminOrOwnerAuth } from '../middleware/auth.middleware';
+
+// Extend AuthRequest to include model
+declare module '../middleware/auth.middleware' {
+  interface AuthRequest {
+    model?: any;
+  }
+}
 
 const router = express.Router();
 
@@ -186,28 +192,20 @@ router.post('/resources', auth, async (req: AuthRequest, res: Response) => {
 router.delete('/resources/:id', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid resource ID' });
     }
 
-    // Find the resource and check ownership
-    const resource = await Resource.findById(id);
+    // Attach the model to the request for the adminOrOwnerAuth middleware
+    req.model = Resource;
     
-    if (!resource) {
-      return res.status(404).json({ message: 'Resource not found' });
-    }
-
-    // Check if the user is the creator of the resource
-    if (resource.addedBy.toString() !== userId) {
-      return res.status(403).json({ message: 'You are not authorized to delete this resource' });
-    }
-
-    await Resource.findByIdAndDelete(id);
-    
-    console.log('Resource deleted successfully:', id);
-    res.json({ message: 'Resource deleted successfully' });
+    // Use the adminOrOwnerAuth middleware with 'addedBy' field
+    await adminOrOwnerAuth(req, res, async () => {
+      await Resource.findByIdAndDelete(id);
+      console.log('Resource deleted successfully:', id);
+      res.json({ message: 'Resource deleted successfully' });
+    }, 'addedBy'); // Note: using 'addedBy' as the owner field
   } catch (error) {
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',

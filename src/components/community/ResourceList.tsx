@@ -43,6 +43,7 @@ export default function ResourceList() {
   const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
   const fetchResources = async () => {
@@ -70,12 +71,12 @@ export default function ResourceList() {
   }, []);
 
   useEffect(() => {
-    // Get current user ID from token
     const token = localStorage.getItem('token');
     if (token) {
       try {
         const tokenData = JSON.parse(atob(token.split('.')[1]));
         setCurrentUserId(tokenData.id);
+        setIsAdmin(tokenData.role === 'admin');
       } catch (error) {
         console.error('Error decoding token:', error);
       }
@@ -97,12 +98,13 @@ export default function ResourceList() {
     try {
       const tokenData = JSON.parse(atob(token.split('.')[1]));
       const currentUserId = tokenData.id;
+      const isAdmin = tokenData.role === 'admin';
 
-      // Check if user is the creator
-      if (currentUserId !== resource.addedBy?._id) {
+      // Check if user is the creator or an admin
+      if (currentUserId !== resource.addedBy?._id && !isAdmin) {
         toast({
           title: "Permission Denied",
-          description: "You are not authorized to delete this resource. Only the creator can delete it.",
+          description: "You are not authorized to delete this resource. Only the creator or an admin can delete it.",
           variant: "destructive",
         });
         return;
@@ -221,8 +223,8 @@ export default function ResourceList() {
                       >
                         <ExternalLink className="w-4 h-4" />
                       </Button>
-                      {/* Only show delete button if current user is the creator */}
-                      {resource.addedBy && currentUserId === resource.addedBy._id && (
+                      {/* Only show delete button if current user is the creator or an admin */}
+                      {resource.addedBy && (currentUserId === resource.addedBy._id || isAdmin) && (
                         <Button
                           variant="ghost"
                           size="icon"

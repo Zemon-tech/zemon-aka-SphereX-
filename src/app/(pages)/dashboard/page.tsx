@@ -530,10 +530,11 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold">Complete Your Profile</h3>
                 <p className="text-muted-foreground mt-1">
                   Add your education and social links to help others connect with you better.
-                  {!user.education?.university && " Missing university, "}
-                  {!user.education?.graduationYear && " graduation year, "}
-                  {!user.linkedin && " LinkedIn, "}
-                  {!user.personalWebsite && " personal website."}
+                  {!user.education?.university && " ( University ) "}
+                  {!user.education?.graduationYear && " ( Graduation Year ) "}
+                  {!user.linkedin && " ( LinkedIn ) "}
+                  {!user.personalWebsite && " ( Personal Website ) "}
+                  {!user.displayName && " ( Display Name ) "}
                 </p>
               </div>
               <div className="ml-6">

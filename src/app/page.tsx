@@ -221,7 +221,7 @@ export default function HomePage() {
                   {!user.education?.graduationYear && " ( Graduation Year ) "}
                   {!user.linkedin && " ( LinkedIn ) "}
                   {!user.personalWebsite && " ( Personal Website ) "}
-                  {!user.github_username && " ( Github Username ) "}
+                  {!user.displayName && " ( Display Name ) "}
                 </p>
               </div>
               <div className="flex items-center gap-3">

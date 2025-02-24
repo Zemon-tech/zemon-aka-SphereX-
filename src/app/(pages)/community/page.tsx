@@ -11,6 +11,7 @@ import IdeaCard from "@/components/community/IdeaCard";
 import ResourceList from "@/components/community/ResourceList";
 import AddIdeaModal from "@/components/community/AddIdeaModal";
 import ShareResourceModal from "@/components/community/ShareResourceModal";
+import CommentsSidePanel from "@/components/community/CommentsSidePanel";
 import axios from "axios";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
@@ -44,6 +45,7 @@ export default function CommunityPage() {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeComments, setActiveComments] = useState<{ ideaId: string; title: string; comments: Comment[] } | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -102,9 +104,21 @@ export default function CommunityPage() {
     await fetchIdeas(); // Re-fetch all ideas to get the updated comments
   };
 
+  const handleCommentClick = (idea: Idea) => {
+    setActiveComments({
+      ideaId: idea._id,
+      title: idea.title,
+      comments: idea.comments
+    });
+  };
+
+  const handleCloseComments = () => {
+    setActiveComments(null);
+  };
+
   return (
     <PageContainer>
-      <div className="py-6 space-y-8">
+      <div className={`py-6 space-y-8 transition-all duration-300 ${activeComments ? 'mr-96' : ''}`}>
         {/* Header Section */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -174,7 +188,8 @@ export default function CommunityPage() {
                         createdAt: idea.createdAt,
                       }}
                       onDelete={fetchIdeas}
-                      onRefresh={handleIdeaRefresh}
+                      onRefresh={fetchIdeas}
+                      onCommentClick={() => handleCommentClick(idea)}
                     />
                   </motion.div>
                 ))
@@ -203,6 +218,17 @@ export default function CommunityPage() {
         onClose={() => setIsShareResourceOpen(false)}
         onResourceAdded={fetchResources}
       />
+
+      {activeComments && (
+        <CommentsSidePanel
+          isOpen={true}
+          onClose={handleCloseComments}
+          ideaId={activeComments.ideaId}
+          ideaTitle={activeComments.title}
+          comments={activeComments.comments}
+          onRefresh={fetchIdeas}
+        />
+      )}
     </PageContainer>
   );
 } 

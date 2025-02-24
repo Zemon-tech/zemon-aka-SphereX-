@@ -86,13 +86,20 @@ export default function EventDetailPage() {
     try {
       const token = localStorage.getItem('token');
       
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      if (!token) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to view event details",
+          variant: "destructive",
+        });
+        router.push('/login');
+        return;
       }
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
       
       const response = await fetch(`${API_BASE_URL}/api/events/${params.id}`, {
         headers
@@ -250,7 +257,7 @@ export default function EventDetailPage() {
       <PageContainer className="py-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Event not found</h1>
-          <p className="text-muted-foreground">The event you're looking for doesn't exist or has been removed.</p>
+          <p className="text-muted-foreground">The event you&apos;re looking for doesn&apos;t exist or has been removed.</p>
           <Button
             variant="outline"
             className="mt-4"

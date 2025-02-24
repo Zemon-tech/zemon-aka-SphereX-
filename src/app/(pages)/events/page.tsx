@@ -1,24 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import {
-  Search,
-  Calendar,
-  MapPin,
-  Clock,
-  Users,
-  Download,
-  Plus,
-  Trophy,
-} from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import EventCard from "@/components/events/EventCard";
 import EventForm from "@/components/events/EventForm";
-import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import PageContainer from "@/components/layout/PageContainer";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchAndFilter from "@/components/layout/SearchAndFilter";
-import GridLayout from "@/components/layout/GridLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { API_BASE_URL } from "@/lib/api";

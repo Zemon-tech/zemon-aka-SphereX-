@@ -42,6 +42,8 @@ export default function ReposPage() {
   const { toast } = useToast();
   const [searchValue, setSearchValue] = useState("");
   const [filterValue, setFilterValue] = useState("all");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [originalRepos, setOriginalRepos] = useState<Repository[]>([]);
 
   const filterOptions = [
     { label: "All Languages", value: "all" },
@@ -65,17 +67,9 @@ export default function ReposPage() {
 
       const data = await response.json();
       if (data.success) {
-        // The backend is already populating added_by with name, so we can use it directly
-        const reposWithCreators = data.data.repos.map((repo: Repository) => ({
-          ...repo,
-          added_by: {
-            _id: repo.added_by?._id || 'unknown',
-            name: repo.added_by?.name || 'Unknown Developer'
-          }
-        }));
-
-        console.log('Repos with creators:', reposWithCreators);
-        setRepos(reposWithCreators);
+        // The backend now provides properly transformed data
+        setOriginalRepos(data.data.repos);
+        setRepos(data.data.repos);
       }
     } catch (error) {
       console.error('Error fetching repositories:', error);
@@ -91,6 +85,37 @@ export default function ReposPage() {
 
   useEffect(() => {
     fetchRepos();
+
+    // Get current user ID from token with safer parsing
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        // Split the token and verify we have the payload part
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+          throw new Error('Invalid token format');
+        }
+
+        // Add padding to base64 string if needed
+        const payload = parts[1];
+        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const pad = base64.length % 4;
+        const paddedPayload = pad ? base64 + '='.repeat(4 - pad) : base64;
+
+        // Parse the token data
+        const tokenData = JSON.parse(atob(paddedPayload));
+        if (tokenData && tokenData.id) {
+          setCurrentUserId(tokenData.id);
+        } else {
+          console.warn('Token payload does not contain user ID');
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        // Clear invalid token
+        localStorage.removeItem('token');
+        setCurrentUserId(null);
+      }
+    }
   }, []);
 
   const handleSubmitProject = async (formData: FormData) => {
@@ -172,12 +197,28 @@ export default function ReposPage() {
 
   const handleSearch = (value: string) => {
     setSearchValue(value);
-    // Add your search logic here
+    if (!value.trim()) {
+      setRepos(originalRepos);
+      return;
+    }
+    const searchLower = value.toLowerCase();
+    const filtered = originalRepos.filter(repo => 
+      repo.name.toLowerCase().includes(searchLower) ||
+      (repo.description || '').toLowerCase().includes(searchLower)
+    );
+    setRepos(filtered);
   };
 
   const handleFilterChange = (value: string) => {
     setFilterValue(value);
-    // Add your filter logic here
+    if (value === 'all') {
+      setRepos(originalRepos);
+    } else {
+      const filtered = originalRepos.filter(repo => 
+        (repo.language || '').toLowerCase() === value.toLowerCase()
+      );
+      setRepos(filtered);
+    }
   };
 
   return (
@@ -253,13 +294,15 @@ export default function ReposPage() {
               description={repo.description}
               stars={repo.stars}
               forks={repo.forks}
-              language={repo.language || 'Unknown'}
+              language={repo.language}
               githubUrl={repo.github_url}
               updatedAt={repo.updatedAt || repo.createdAt}
               creator={{ 
-                name: repo.added_by?.name || 'Unknown Developer',
+                name: repo.added_by?.name,
                 id: repo.added_by?._id
               }}
+              currentUserId={currentUserId}
+              onDelete={fetchRepos}
               onGitHubClick={(e) => {
                 e.preventDefault();
                 window.open(repo.github_url, '_blank');

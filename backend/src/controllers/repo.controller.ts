@@ -22,15 +22,25 @@ export const getRepos = async (req: Request, res: Response, next: NextFunction) 
 
     const skip = (page - 1) * limit;
     const repos = await Repo.find()
-      .populate('added_by', 'name')
+      .populate('added_by', 'name avatar')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
+    // Transform the data to ensure no undefined values
+    const transformedRepos = repos.map(repo => ({
+      ...repo,
+      language: repo.programming_language || 'Not Specified',
+      added_by: repo.added_by || {
+        _id: 'deleted',
+        name: 'Deleted User'
+      }
+    }));
+
     const total = await Repo.countDocuments();
     const data = {
-      repos,
+      repos: transformedRepos,
       pagination: {
         page,
         limit,
@@ -102,11 +112,16 @@ export const addRepo = async (req: Request, res: Response, next: NextFunction) =
     // Fetch GitHub data
     const githubData = await fetchGitHubRepo(urlData.owner, urlData.repo);
 
+    // Normalize language value and store it in a field that won't conflict with MongoDB's language field
+    const repoLanguage = language 
+      ? language.toLowerCase() 
+      : githubData.language?.toLowerCase() || 'not specified';
+
     // Create repo with combined data
     const repo = new Repo({
       ...githubData,
-      description: description || githubData.description, // Use provided description or fallback to GitHub
-      language: language || '', // Just use the provided language
+      description: description || githubData.description,
+      programming_language: repoLanguage, // Store as programming_language instead of language
       tags: tags || [],
       added_by: userId,
     });

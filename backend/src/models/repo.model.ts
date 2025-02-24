@@ -71,6 +71,10 @@ const repoSchema = new Schema({
     type: String,
     required: true
   },
+  programming_language: {
+    type: String,
+    default: 'Not Specified'
+  },
   last_synced: {
     type: Date,
     default: Date.now

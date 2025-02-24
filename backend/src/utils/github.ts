@@ -12,6 +12,7 @@ interface GitHubApiRepo {
     login: string;
   } | null;
   private: boolean;
+  language: string | null;
 }
 
 interface GitHubApiContributor {
@@ -34,6 +35,7 @@ export interface GitHubRepoData {
   }>;
   readme_url: string;
   owner: string;
+  language: string | null;
 }
 
 export async function fetchGitHubRepo(owner: string, repo: string): Promise<GitHubRepoData> {
@@ -94,6 +96,7 @@ export async function fetchGitHubRepo(owner: string, repo: string): Promise<GitH
       contributors: validContributors,
       readme_url: `https://raw.githubusercontent.com/${owner}/${repo}/main/README.md`,
       owner: repoData.owner?.login || owner,
+      language: repoData.language
     };
   } catch (error: any) {
     logger.error('Error fetching GitHub repo data:', error);

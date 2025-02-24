@@ -102,7 +102,7 @@ export default function HomePage() {
   ];
 
   useEffect(() => {
-    const checkUserAndAlert = () => {
+    const checkUserAndAlert = async () => {
       // Check if user is logged in
       const storedUser = localStorage.getItem('user');
       const token = localStorage.getItem('token');
@@ -112,11 +112,40 @@ export default function HomePage() {
         const userData = JSON.parse(storedUser);
         setUser(userData);
 
+        // Simulate "Save Changes" by making a profile update API call
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name: userData.name,
+              displayName: userData.displayName,
+              github: userData.github,
+              linkedin: userData.linkedin,
+              personalWebsite: userData.personalWebsite,
+              education: userData.education
+            })
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            console.log('Profile data refreshed:', data.data);
+            // Update local storage with fresh data
+            localStorage.setItem('user', JSON.stringify(data.data));
+            setUser(data.data);
+          }
+        } catch (error) {
+          console.error('Error refreshing profile data:', error);
+        }
+
         // Clear the ignored state on new login session
         const lastLoginTime = localStorage.getItem('last_login_time');
         const currentTime = new Date().getTime();
         
-        if (!lastLoginTime || (currentTime - parseInt(lastLoginTime)) > 1000 * 60 * 60) { // 1 hour
+        if (!lastLoginTime || (currentTime - parseInt(lastLoginTime)) > 1000 * 60 * 60) {
           console.log('New login session detected, clearing ignored state');
           localStorage.removeItem('profile_alert_ignored');
           localStorage.setItem('last_login_time', currentTime.toString());
@@ -179,36 +208,40 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      {/* Profile Completion Alert - Moved to top */}
+      {/* Profile Completion Alert - Updated to full-width banner */}
       {showProfileAlert && user && (
-        <div className="container mx-auto py-4">
-          <Card className="border-primary/50">
-            <CardContent className="flex items-center justify-between p-6">
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold">Complete Your Profile</h3>
-                <p className="text-muted-foreground mt-1">
-                  Add your education and social links to help others connect with you better.
-                  {!user.education?.university && " Missing university, "}
-                  {!user.education?.graduationYear && " graduation year, "}
-                  {!user.linkedin && " LinkedIn, "}
-                  {!user.personalWebsite && " personal website."}
+        <div className="w-full bg-gradient-to-r from-primary/10 via-primary/5 to-background border-y">
+          <div className="container mx-auto py-2">
+            <div className="flex items-center justify-between px-4">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <p className="text-sm text-muted-foreground">
+                  Complete your profile to unlock all features:-
+                  {!user.education?.university && " ( University ) "}
+                  {!user.education?.graduationYear && " ( Graduation Year ) "}
+                  {!user.linkedin && " ( LinkedIn ) "}
+                  {!user.personalWebsite && " ( Personal Website ) "}
+                  {!user.github_username && " ( Github Username ) "}
                 </p>
               </div>
-              <div className="flex gap-3 ml-6">
+              <div className="flex items-center gap-3">
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   onClick={handleIgnoreAlert}
+                  className="text-sm h-8"
                 >
-                  Ignore this for now
+                  Ignore
                 </Button>
                 <Button 
                   onClick={() => router.push('/settings')}
+                  size="sm"
+                  className="h-8"
                 >
-                  Complete Profile
+                  Complete Now
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 

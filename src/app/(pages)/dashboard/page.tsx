@@ -37,6 +37,10 @@ interface User {
   linkedin?: string;
   personalWebsite?: string;
   displayName?: string;
+  education?: {
+    university?: string;
+    graduationYear?: string;
+  };
 }
 
 interface UserStats {
@@ -474,6 +478,31 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Profile Completion Alert */}
+        {user && (!user.education?.university || !user.education?.graduationYear || !user.linkedin || !user.personalWebsite) && (
+          <Card className="border-primary/50">
+            <CardContent className="flex items-center justify-between p-6">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold">Complete Your Profile</h3>
+                <p className="text-muted-foreground mt-1">
+                  Add your education and social links to help others connect with you better.
+                  {!user.education?.university && " Missing university, "}
+                  {!user.education?.graduationYear && " graduation year, "}
+                  {!user.linkedin && " LinkedIn, "}
+                  {!user.personalWebsite && " personal website."}
+                </p>
+              </div>
+              <div className="ml-6">
+                <Button 
+                  onClick={() => router.push('/settings')}
+                >
+                  Complete Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Main Content */}
         {isLoading ? (

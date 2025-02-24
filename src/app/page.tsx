@@ -12,8 +12,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import Footer from "@/components/layout/Footer";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+interface User {
+  _id?: string;
+  id?: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  github_username?: string;
+  github?: string;
+  phone?: string;
+  role?: string;
+  linkedin?: string;
+  personalWebsite?: string;
+  displayName?: string;
+  education?: {
+    university?: string;
+    graduationYear?: string;
+  };
+}
 
 export default function HomePage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [showProfileAlert, setShowProfileAlert] = useState(false);
+
   const features = [
     {
       icon: <Code className="w-6 h-6" />,
@@ -76,8 +101,117 @@ export default function HomePage() {
     { icon: <Heart className="w-5 h-5" />, text: "Open Source First" },
   ];
 
+  useEffect(() => {
+    const checkUserAndAlert = () => {
+      // Check if user is logged in
+      const storedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      console.log('Stored user data:', storedUser);
+      
+      if (storedUser && token) {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+
+        // Clear the ignored state on new login session
+        const lastLoginTime = localStorage.getItem('last_login_time');
+        const currentTime = new Date().getTime();
+        
+        if (!lastLoginTime || (currentTime - parseInt(lastLoginTime)) > 1000 * 60 * 60) { // 1 hour
+          console.log('New login session detected, clearing ignored state');
+          localStorage.removeItem('profile_alert_ignored');
+          localStorage.setItem('last_login_time', currentTime.toString());
+        }
+
+        const hasIncompleteProfile = !userData.education?.university || 
+                                   !userData.education?.graduationYear || 
+                                   !userData.linkedin || 
+                                   !userData.personalWebsite;
+
+        const isIgnored = localStorage.getItem('profile_alert_ignored');
+
+        console.log('Profile completion status:', {
+          isIgnored,
+          hasIncompleteProfile,
+          education: userData.education,
+          linkedin: userData.linkedin,
+          personalWebsite: userData.personalWebsite
+        });
+
+        setShowProfileAlert(hasIncompleteProfile && !isIgnored);
+      } else {
+        setUser(null);
+        setShowProfileAlert(false);
+      }
+    };
+
+    // Initial check
+    checkUserAndAlert();
+
+    // Listen for auth state changes
+    const handleAuthChange = () => {
+      console.log('Auth state changed, rechecking profile alert');
+      checkUserAndAlert();
+    };
+
+    window.addEventListener('auth-state-change', handleAuthChange);
+    return () => {
+      window.removeEventListener('auth-state-change', handleAuthChange);
+    };
+  }, []);
+
+  const handleIgnoreAlert = () => {
+    setShowProfileAlert(false);
+    localStorage.setItem('profile_alert_ignored', 'true');
+  };
+
+  // Handle logout
+  useEffect(() => {
+    const handleLogout = () => {
+      localStorage.removeItem('profile_alert_ignored');
+      localStorage.removeItem('last_login_time');
+      setUser(null);
+      setShowProfileAlert(false);
+    };
+
+    window.addEventListener('logout', handleLogout);
+    return () => window.removeEventListener('logout', handleLogout);
+  }, []);
+
   return (
     <div className="min-h-screen">
+      {/* Profile Completion Alert - Moved to top */}
+      {showProfileAlert && user && (
+        <div className="container mx-auto py-4">
+          <Card className="border-primary/50">
+            <CardContent className="flex items-center justify-between p-6">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold">Complete Your Profile</h3>
+                <p className="text-muted-foreground mt-1">
+                  Add your education and social links to help others connect with you better.
+                  {!user.education?.university && " Missing university, "}
+                  {!user.education?.graduationYear && " graduation year, "}
+                  {!user.linkedin && " LinkedIn, "}
+                  {!user.personalWebsite && " personal website."}
+                </p>
+              </div>
+              <div className="flex gap-3 ml-6">
+                <Button 
+                  variant="outline" 
+                  onClick={handleIgnoreAlert}
+                >
+                  Ignore this for now
+                </Button>
+                <Button 
+                  onClick={() => router.push('/settings')}
+                >
+                  Complete Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Hero Section - Enhanced with better gradient */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-background via-background to-muted/50">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />

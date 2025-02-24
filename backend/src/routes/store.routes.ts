@@ -13,6 +13,7 @@ import Store from '../models/store.model';
 import { AppError } from '../utils/errors';
 import { Types } from 'mongoose';
 import { clearCache } from '../utils/redis';
+import User from '../models/user.model';
 
 // Extend AuthRequest to include model
 declare module '../middleware/auth.middleware' {
@@ -130,6 +131,40 @@ router.put('/:id/images', auth, async (req: AuthRequest, res, next) => {
       data: tool 
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+// Get user's tools by username
+router.get('/user/:username', async (req, res, next) => {
+  try {
+    const { username } = req.params;
+
+    // Find user by displayName or name
+    const user = await User.findOne({
+      $or: [
+        { displayName: username },
+        { name: username }
+      ]
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const tools = await Store.find({ author: user._id })
+      .sort({ createdAt: -1 })
+      .populate('author', 'name')
+      .lean();
+
+    res.json({
+      success: true,
+      data: {
+        tools: tools || []
+      }
+    });
+  } catch (error) {
+    console.error('Error in getUserToolsByUsername:', error);
     next(error);
   }
 });

@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Users, Heart, MessageSquare, Share2, Trophy, ArrowLeft } from "lucide-react";
+import { Calendar, MapPin, Users, Heart, MessageSquare, Share2, Trophy, ArrowLeft, User } from "lucide-react";
 import PageContainer from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { API_BASE_URL } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface Event {
   _id: string;
@@ -44,6 +45,31 @@ interface CountdownTime {
   hours: number;
   minutes: number;
   seconds: number;
+}
+
+function getInitials(name: string | undefined): string {
+  if (!name) return '';
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function getAvatarColor(name: string | undefined): string {
+  if (!name) return 'bg-primary/10';
+  const colors = [
+    'bg-red-100',
+    'bg-green-100',
+    'bg-blue-100',
+    'bg-yellow-100',
+    'bg-purple-100',
+    'bg-pink-100',
+    'bg-indigo-100',
+  ];
+  const index = name.length % colors.length;
+  return colors[index];
 }
 
 export default function EventDetailPage() {
@@ -386,14 +412,24 @@ export default function EventDetailPage() {
         <div className="bg-card border rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4">Organizer</h3>
           <div className="flex items-center gap-4">
-            <img
-              src={event.organizer.avatar}
-              alt={event.organizer.name}
-              className="w-12 h-12 rounded-full"
-            />
+            <Avatar className="w-12 h-12">
+              <AvatarImage 
+                src={event.organizer?.avatar} 
+                alt={event.organizer?.name || 'Organizer'} 
+              />
+              <AvatarFallback 
+                className={`${getAvatarColor(event.organizer?.name)} text-foreground font-medium flex items-center justify-center`}
+              >
+                {event.organizer?.name ? (
+                  getInitials(event.organizer.name)
+                ) : (
+                  <User className="w-6 h-6 text-muted-foreground" />
+                )}
+              </AvatarFallback>
+            </Avatar>
             <div>
-              <h4 className="font-medium">{event.organizer.name}</h4>
-              <p className="text-sm text-muted-foreground">Event Organizer</p>
+              <p className="font-semibold">{event.organizer?.name || 'Anonymous'}</p>
+              <p className="text-sm text-muted-foreground">Organizer</p>
             </div>
           </div>
         </div>

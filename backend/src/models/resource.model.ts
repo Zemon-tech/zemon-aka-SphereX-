@@ -44,6 +44,23 @@ const ResourceSchema = new Schema({
     ref: 'User',
     required: [true, 'Author is required'],
     index: true
+  },
+  type: {
+    type: String,
+    required: true,
+    enum: ['article', 'video', 'course', 'book', 'documentation', 'other']
+  },
+  tags: [{
+    type: String,
+    trim: true
+  }],
+  likes: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  views: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true,
@@ -52,7 +69,7 @@ const ResourceSchema = new Schema({
 });
 
 // Add indexes
-ResourceSchema.index({ title: 'text', description: 'text' });
+ResourceSchema.index({ title: 'text', description: 'text', tags: 'text' });
 
 // Pre-save middleware
 ResourceSchema.pre('save', function(next) {

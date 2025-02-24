@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { 
   Github, Star, GitFork, 
   GitBranch, Users, GitCommit,
-  Plus, ExternalLink, Eye, Linkedin
+  Plus, ExternalLink, Eye, Linkedin,
+  Share2
 } from "lucide-react";
 import PageContainer from "@/components/layout/PageContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -355,6 +356,37 @@ export default function DashboardPage() {
     }
   }, [fetchPublishedProjects, fetchUserTools]);
 
+  const handleShareProfile = async () => {
+    if (!user?.displayName && !user?.name) return;
+
+    const username = user.displayName || user.name;
+    const shareUrl = `${window.location.origin}/${username}`;
+    const shareData = {
+      title: `${username}'s Profile`,
+      text: `Check out ${username}'s profile on SphereX`,
+      url: shareUrl
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copied!",
+          description: "Profile link has been copied to your clipboard.",
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      toast({
+        title: "Error",
+        description: "Failed to share profile",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (error) {
     return (
       <PageContainer className="py-8">
@@ -453,7 +485,18 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
-                <Button onClick={() => router.push('/settings')}>Edit Profile</Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={handleShareProfile}
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share Profile
+                  </Button>
+                  <Button onClick={() => router.push('/settings')}>Edit Profile</Button>
+                </div>
               </div>
 
               <div className="flex items-center gap-6 mt-6">

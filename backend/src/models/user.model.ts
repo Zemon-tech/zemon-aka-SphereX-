@@ -61,6 +61,9 @@ const userSchema = new Schema<IUser>({
   timestamps: true
 });
 
+// Create text indexes for search
+userSchema.index({ name: 'text', displayName: 'text', bio: 'text', company: 'text' });
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();

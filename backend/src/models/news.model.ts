@@ -33,7 +33,8 @@ const newsSchema = new Schema<INews>({
   },
   category: {
     type: String,
-    required: true
+    required: true,
+    enum: ['Framework Updates', 'Security', 'Community', 'Tutorials']
   },
   image: {
     type: String,
@@ -64,4 +65,9 @@ const newsSchema = new Schema<INews>({
   timestamps: true
 });
 
-export default model<INews>('News', newsSchema); 
+// Create text indexes for search
+newsSchema.index({ title: 'text', content: 'text', excerpt: 'text', tags: 'text' });
+
+const News = model<INews>('News', newsSchema);
+
+export default News; 

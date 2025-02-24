@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Menu, X, LogIn } from "lucide-react";
 import UserAvatar from "./UserAvatar";
+import GlobalSearch from "./GlobalSearch";
 import Image from "next/image";
 
 interface User {
@@ -91,6 +92,7 @@ export default function Navbar() {
                 )}
               </Link>
             ))}
+            <GlobalSearch />
             {isClient && (user ? (
               <UserAvatar 
                 user={user} 
@@ -125,6 +127,9 @@ export default function Navbar() {
             className="md:hidden py-4"
           >
             <div className="flex flex-col space-y-4">
+              <div className="px-4">
+                <GlobalSearch />
+              </div>
               {navItems.map((item) => (
                 <Link
                   key={item.path}

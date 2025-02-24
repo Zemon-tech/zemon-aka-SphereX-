@@ -77,4 +77,7 @@ IdeaSchema.pre('save', function(next) {
   next();
 });
 
+// Create text indexes for search
+IdeaSchema.index({ title: 'text', description: 'text' });
+
 export default mongoose.model<IIdea>('Idea', IdeaSchema); 

@@ -24,13 +24,21 @@ const repoSchema = new Schema({
   },
   description: {
     type: String,
-    default: 'No description provided'
+    required: true
   },
   github_url: {
     type: String,
     required: true,
     unique: true
   },
+  programming_language: {
+    type: String,
+    trim: true
+  },
+  tags: [{
+    type: String,
+    trim: true
+  }],
   stars: {
     type: Number,
     default: 0
@@ -71,10 +79,6 @@ const repoSchema = new Schema({
     type: String,
     required: true
   },
-  programming_language: {
-    type: String,
-    default: 'Not Specified'
-  },
   last_synced: {
     type: Date,
     default: Date.now
@@ -88,7 +92,7 @@ const repoSchema = new Schema({
   timestamps: true
 });
 
-// Index for faster searches
-repoSchema.index({ name: 'text', description: 'text' });
+// Create text indexes for search
+repoSchema.index({ name: 'text', description: 'text', tags: 'text' });
 
 export default model('Repo', repoSchema); 

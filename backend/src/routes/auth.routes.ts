@@ -427,4 +427,43 @@ router.post('/setup-password', auth, async (req: AuthRequest, res, next) => {
   }
 });
 
+// Get user profile by username
+router.get('/users/:username', async (req, res, next) => {
+  try {
+    const { username } = req.params;
+
+    // Find user by displayName or name
+    const user = await User.findOne({
+      $or: [
+        { displayName: username },
+        { name: username }
+      ]
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Prepare user data for response (excluding sensitive information)
+    const userData = {
+      id: user._id,
+      name: user.name,
+      displayName: user.displayName,
+      avatar: user.avatar,
+      company: user.company,
+      github: user.github,
+      linkedin: user.linkedin,
+      personalWebsite: user.personalWebsite,
+      education: user.education
+    };
+
+    res.json({
+      success: true,
+      data: userData
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router; 

@@ -79,6 +79,7 @@ export interface IEvent extends Document {
   attendees: IUser['_id'][];
   clicks: number;
   registrations: number;
+  website?: string;
   analytics: {
     dailyViews: Array<{
       date: Date;

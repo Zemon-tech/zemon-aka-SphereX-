@@ -77,15 +77,19 @@ const eventSchema = new Schema<IEvent>({
       date: Date,
       count: Number
     }]
+  },
+  website: {
+    type: String
   }
 }, {
   timestamps: true
 });
 
+// Create text indexes for search
+eventSchema.index({ title: 'text', description: 'text', location: 'text', tags: 'text' });
+
 // Indexes for faster searching
-eventSchema.index({ title: 'text', description: 'text', location: 'text' });
 eventSchema.index({ date: 1 });
 eventSchema.index({ type: 1 });
-eventSchema.index({ tags: 1 });
 
 export default model<IEvent>('Event', eventSchema); 

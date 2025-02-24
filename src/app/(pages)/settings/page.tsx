@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface UserProfile {
   _id: string;
   name: string;
+  displayName: string;
   email: string;
   avatar?: string;
   github?: string;
@@ -208,7 +209,7 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle>Basic Information</CardTitle>
                   <CardDescription>
-                    Update your basic profile information
+                    Your GitHub profile information
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -222,12 +223,21 @@ export default function SettingsPage() {
                   <Separator />
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
+                      <Label htmlFor="name">Username</Label>
                       <Input
                         id="name"
                         value={profile?.name || ''}
-                        onChange={e => setProfile(prev => ({ ...prev!, name: e.target.value }))}
-                        placeholder="John Doe"
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="displayName">Display Name</Label>
+                      <Input
+                        id="displayName"
+                        value={profile?.displayName || ''}
+                        onChange={e => setProfile(prev => ({ ...prev!, displayName: e.target.value }))}
+                        placeholder="Enter your display name"
                       />
                     </div>
                     <div className="space-y-2">
@@ -237,6 +247,7 @@ export default function SettingsPage() {
                         type="email"
                         value={profile?.email || ''}
                         disabled
+                        className="bg-muted"
                       />
                     </div>
                     <div className="space-y-2">
@@ -244,8 +255,8 @@ export default function SettingsPage() {
                       <Input
                         id="role"
                         value={profile?.role || ''}
-                        onChange={e => setProfile(prev => ({ ...prev!, role: e.target.value }))}
-                        placeholder="e.g. Software Engineer"
+                        disabled
+                        className="bg-muted"
                       />
                     </div>
                     <div className="space-y-2">
@@ -322,7 +333,8 @@ export default function SettingsPage() {
                       <Github className="w-5 h-5" />
                       <Input
                         value={profile?.github || ''}
-                        onChange={e => setProfile(prev => ({ ...prev!, github: e.target.value }))}
+                        disabled
+                        className="bg-muted"
                         placeholder="GitHub username"
                       />
                     </div>

@@ -76,7 +76,7 @@ export default function AuthCallback() {
 
         // Dispatch auth state change event
         const event = new CustomEvent('auth-state-change', { 
-          detail: data.data.user 
+          detail: userData 
         });
         window.dispatchEvent(event);
 
@@ -85,7 +85,13 @@ export default function AuthCallback() {
         if (error_description) {
           router.push(`/login?error=${encodeURIComponent(error_description)}`);
         } else {
-          router.push('/');
+          // Redirect to password setup if this is a new user
+          console.log('Is new user:', data.data.isNewUser);
+          if (data.data.isNewUser) {
+            router.push('/setup-password');
+          } else {
+            router.push('/');
+          }
         }
       } catch (error) {
         console.error('Auth callback error:', error);

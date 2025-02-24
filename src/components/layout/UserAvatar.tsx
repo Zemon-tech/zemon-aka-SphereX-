@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronDown, LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
@@ -9,6 +8,7 @@ import Link from "next/link";
 interface UserAvatarProps {
   user: {
     name: string;
+    displayName?: string;
     email: string;
     avatar?: string;
   };
@@ -17,7 +17,6 @@ interface UserAvatarProps {
 }
 
 export default function UserAvatar({ user, onLogout, showDashboard }: UserAvatarProps) {
-  const router = useRouter();
   const { toast } = useToast();
 
   const getInitials = (name: string) => {
@@ -79,8 +78,9 @@ export default function UserAvatar({ user, onLogout, showDashboard }: UserAvatar
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            <p className="text-sm font-medium leading-none">{user.displayName || user.name}</p>
+            <p className="text-xs leading-none text-muted-foreground">@{user.name}</p>
+            <p className="text-xs leading-none text-muted-foreground mt-1">{user.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

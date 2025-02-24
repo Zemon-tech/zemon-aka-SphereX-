@@ -36,6 +36,7 @@ interface User {
   role?: string;
   linkedin?: string;
   personalWebsite?: string;
+  displayName?: string;
 }
 
 interface UserStats {
@@ -172,7 +173,8 @@ export default function DashboardPage() {
               github: data.data.github || data.data.github_username,
               github_username: data.data.github_username || data.data.github,
               linkedin: data.data.linkedin || userData.linkedin || '',
-              personalWebsite: data.data.personalWebsite || userData.personalWebsite || ''
+              personalWebsite: data.data.personalWebsite || userData.personalWebsite || '',
+              displayName: data.data.displayName || data.data.name
             };
             console.log('Complete user data:', completeUserData);
 
@@ -408,8 +410,9 @@ export default function DashboardPage() {
             <div className="flex-1">
               <div className="flex items-start justify-between">
                 <div>
-                  <h1 className="text-4xl font-bold">{user?.name}</h1>
-                  <p className="text-lg text-muted-foreground mt-1">{user?.role}</p>
+                  <h1 className="text-4xl font-bold">{user?.displayName || user?.name}</h1>
+                  <p className="text-sm text-muted-foreground mt-1">@{user?.name}</p>
+                  <p className="text-lg text-muted-foreground mt-2">{user?.role}</p>
                   <div className="flex items-center gap-4 mt-2">
                     {user?.github && (
                       <a 

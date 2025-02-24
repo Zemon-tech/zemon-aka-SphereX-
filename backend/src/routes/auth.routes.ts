@@ -26,6 +26,7 @@ router.post('/signup', async (req, res, next) => {
     // Create new user
     const user = await User.create({
       name,
+      displayName: name, // Initially set displayName same as name
       email,
       password
     });
@@ -45,6 +46,7 @@ router.post('/signup', async (req, res, next) => {
     const userData = {
       id: user._id,
       name: user.name,
+      displayName: user.displayName,
       email: user.email,
       avatar: user.avatar,
       role: user.role
@@ -95,6 +97,7 @@ router.post('/login', async (req, res, next) => {
     const userData = {
       id: user._id,
       name: user.name,
+      displayName: user.displayName,
       email: user.email,
       avatar: user.avatar,
       role: user.role
@@ -151,6 +154,7 @@ router.get('/me', async (req, res, next) => {
     const userData = {
       id: user._id,
       name: user.name,
+      displayName: user.displayName,
       email: user.email,
       avatar: user.avatar,
       role: user.role,
@@ -231,20 +235,24 @@ router.post('/github/sync', async (req, res, next) => {
 
     // Find or create user
     let user = await User.findOne({ email });
+    let isNewUser = false;
     
     if (user) {
       // Update existing user with GitHub data
       user.name = name;
+      user.displayName = user.displayName || name; // Keep existing displayName if set
       user.avatar = avatar || user.avatar;
       user.github = github;
       await user.save();
     } else {
       // Create new user with GitHub data
+      isNewUser = true;
       // Generate a secure random password that meets the minimum length requirement
       const randomPassword = crypto.randomBytes(16).toString('hex'); // 32 characters long
       
       user = await User.create({
         name,
+        displayName: name, // Initially set displayName same as name
         email,
         avatar,
         github,
@@ -267,6 +275,7 @@ router.post('/github/sync', async (req, res, next) => {
     const userData = {
       id: user._id,
       name: user.name,
+      displayName: user.displayName,
       email: user.email,
       avatar: user.avatar,
       github: user.github,
@@ -278,7 +287,8 @@ router.post('/github/sync', async (req, res, next) => {
       success: true,
       data: {
         token,
-        user: userData
+        user: userData,
+        isNewUser
       }
     });
   } catch (error) {
@@ -302,6 +312,7 @@ router.put('/profile', auth, async (req: AuthRequest, res, next) => {
     // Extract fields from request body
     const {
       name,
+      displayName,
       company,
       role,
       github,
@@ -312,6 +323,7 @@ router.put('/profile', auth, async (req: AuthRequest, res, next) => {
 
     // Update basic information
     if (name) user.name = name;
+    if (displayName) user.displayName = displayName;
     if (company) user.company = company;
     if (role) user.role = role;
 
@@ -345,6 +357,7 @@ router.put('/profile', auth, async (req: AuthRequest, res, next) => {
     const userData = {
       id: user._id,
       name: user.name,
+      displayName: user.displayName,
       email: user.email,
       avatar: user.avatar,
       role: user.role,
@@ -357,6 +370,53 @@ router.put('/profile', auth, async (req: AuthRequest, res, next) => {
 
     // Update cache
     await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
+
+    res.json({
+      success: true,
+      data: userData
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Setup password after GitHub signup
+router.post('/setup-password', auth, async (req: AuthRequest, res, next) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError('User not authenticated', 401);
+    }
+
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      throw new AppError('Password must be at least 6 characters long', 400);
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Update user's password
+    user.password = password;
+    await user.save();
+
+    // Prepare user data for response
+    const userData = {
+      id: user._id,
+      name: user.name,
+      displayName: user.displayName,
+      email: user.email,
+      avatar: user.avatar,
+      role: user.role,
+      company: user.company,
+      github: user.github,
+      github_username: user.github,
+      linkedin: user.linkedin,
+      personalWebsite: user.personalWebsite,
+      education: user.education
+    };
 
     res.json({
       success: true,

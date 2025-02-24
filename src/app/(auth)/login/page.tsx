@@ -9,12 +9,10 @@ import { API_BASE_URL } from "@/lib/api";
 import { signInWithGitHub } from "@/lib/supabase";
 
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    name: "",
   });
   const router = useRouter();
   const { toast } = useToast();
@@ -24,8 +22,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,25 +63,11 @@ export default function LoginPage() {
         // Dispatch auth state change event with complete data
         const event = new CustomEvent('auth-state-change', { detail: completeUserData });
         window.dispatchEvent(event);
-
-        // Save the profile data to ensure it's properly stored
-        const saveResponse = await fetch(`${API_BASE_URL}/api/auth/profile`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${data.data.token}`
-          },
-          body: JSON.stringify(completeUserData)
-        });
-
-        if (!saveResponse.ok) {
-          console.error('Failed to save complete profile data');
-        }
       }
 
       toast({
         title: "Success",
-        description: isLogin ? "Logged in successfully" : "Account created successfully",
+        description: "Logged in successfully",
       });
 
       router.push('/');
@@ -125,44 +108,23 @@ export default function LoginPage() {
       >
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
-            {isLogin ? "Sign in to your account" : "Create your account"}
+            Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-muted-foreground">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            New to the platform?{" "}
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={handleGitHubLogin}
               className="font-medium text-primary hover:text-primary/90"
             >
-              {isLogin ? "Sign up" : "Sign in"}
+              Sign up with GitHub
             </button>
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
-            {!isLogin && (
-              <div>
-                <label htmlFor="name" className="sr-only">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    required={!isLogin}
-                    className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-border placeholder-muted-foreground text-foreground focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
-                    placeholder="Full Name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-            )}
             <div>
               <label htmlFor="email" className="sr-only">
-                Email address
+                Registered GitHub Email
               </label>
               <div className="relative">
                 <input
@@ -172,7 +134,7 @@ export default function LoginPage() {
                   autoComplete="email"
                   required
                   className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-border placeholder-muted-foreground text-foreground focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
-                  placeholder="Email address"
+                  placeholder="Registered GitHub Email"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
@@ -219,7 +181,7 @@ export default function LoginPage() {
                   Processing...
                 </span>
               ) : (
-                isLogin ? "Sign in" : "Sign up"
+                "Sign in"
               )}
             </button>
           </div>

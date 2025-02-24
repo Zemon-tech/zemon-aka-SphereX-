@@ -1,4 +1,4 @@
-# SphereX - Open Source Community Platform edited
+# SphereX - Open Source Community Platform edited 2nd time
 
 SphereX is a modern web platform for the open source community, built with Next.js 14, Tailwind CSS, and Framer Motion. It provides a space for developers to discover projects, share news, and participate in events.
 

@@ -351,7 +351,7 @@ export default function SettingsPage() {
                       <Input
                         value={profile?.personalWebsite || ''}
                         onChange={e => setProfile(prev => ({ ...prev!, personalWebsite: e.target.value }))}
-                        placeholder="Personal website URL"
+                        placeholder="Portfolio website URL"
                       />
                     </div>
                   </div>

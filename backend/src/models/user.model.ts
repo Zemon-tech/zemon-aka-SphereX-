@@ -40,6 +40,7 @@ const userSchema = new Schema<IUser>({
   personalWebsite: {
     type: String,
     trim: true
+    // Note: This field is referred to as "Portfolio website" in the UI
   },
   education: {
     university: {

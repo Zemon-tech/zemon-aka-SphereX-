@@ -11,7 +11,7 @@ export interface IUser extends Document {
   github?: string;
   twitter?: string;
   linkedin?: string;
-  personalWebsite?: string;
+  personalWebsite?: string; // Referred to as "Portfolio website" in the UI
   education?: {
     university: string;
     graduationYear: number;

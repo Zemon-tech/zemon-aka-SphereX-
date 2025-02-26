@@ -220,7 +220,7 @@ export default function HomePage() {
                   {!user.education?.university && " ( University ) "}
                   {!user.education?.graduationYear && " ( Graduation Year ) "}
                   {!user.linkedin && " ( LinkedIn ) "}
-                  {!user.personalWebsite && " ( Personal Website ) "}
+                  {!user.personalWebsite && " ( Portfolio Website ) "}
                   {!user.displayName && " ( Display Name ) "}
                 </p>
               </div>

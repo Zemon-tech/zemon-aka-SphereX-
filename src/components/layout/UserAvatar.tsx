@@ -4,6 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface UserAvatarProps {
   user: {
@@ -18,6 +19,12 @@ interface UserAvatarProps {
 
 export default function UserAvatar({ user, onLogout, showDashboard }: UserAvatarProps) {
   const { toast } = useToast();
+  const [username, setUsername] = useState<string>("");
+
+  useEffect(() => {
+    // Set the username for the dashboard link
+    setUsername(user.name);
+  }, [user]);
 
   const getInitials = (name: string) => {
     return name
@@ -86,7 +93,7 @@ export default function UserAvatar({ user, onLogout, showDashboard }: UserAvatar
         <DropdownMenuSeparator />
         {showDashboard && (
           <DropdownMenuItem asChild>
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href={`/dashboard/${username}`}>Dashboard</Link>
           </DropdownMenuItem>
         )}
         <DropdownMenuItem asChild>

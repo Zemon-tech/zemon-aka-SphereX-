@@ -135,7 +135,8 @@ export const search = async (req: Request, res: Response, next: NextFunction) =>
         title: user.displayName || user.name,
         description: `@${user.name}`,
         type: 'user' as const,
-        url: `/${user.name}`,
+        url: `/dashboard/${user.name}`,
+        originalUsername: user.name
       })),
     ];
 

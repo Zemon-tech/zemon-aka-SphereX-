@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { useDebounce } from "../../hooks/useDebounce";
 
 interface SearchResult {
@@ -15,6 +14,11 @@ interface SearchResult {
   url: string;
   icon?: React.ReactNode;
   avatar?: string;
+  originalUsername?: string;
+  profileImage?: string;
+  thumbnail?: string;
+  image?: string;
+  coverImage?: string;
 }
 
 export default function GlobalSearch() {
@@ -85,17 +89,11 @@ export default function GlobalSearch() {
         const data = await response.json();
         console.log('Raw search results:', data.results);
         
-        // Map the results to include avatars and ensure proper URL case sensitivity
-        const mappedResults = data.results.map((result: any) => {
-          // Preserve the original URL case for user types
-          const url = result.type === 'user' 
-            ? result.url.replace(/\/([^/]+)$/, (_: string, username: string) => 
-                `/${result.originalUsername || username}`)
-            : result.url;
-
+        // Map the results to include avatars
+        const mappedResults = data.results.map((result: SearchResult) => {
+          // For user types, the URL is already correct from the backend
           return {
             ...result,
-            url,
             avatar: 
               result.type === 'user' ? result.avatar || result.profileImage :
               result.type === 'repo' ? result.thumbnail || result.image || result.coverImage :

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Github, Linkedin, Link as LinkIcon, Save } from "lucide-react";
+import { Github, Linkedin, Link as LinkIcon, Save, AlertTriangle } from "lucide-react";
 import PageContainer from "@/components/layout/PageContainer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,16 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
 
 interface UserProfile {
   _id: string;
@@ -34,7 +44,10 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +107,51 @@ export default function SettingsPage() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true);
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/account`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Close the dialog
+        setIsDialogOpen(false);
+        
+        // Clear local storage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        // Show success message
+        toast({
+          title: "Success",
+          description: "Your account has been deleted successfully",
+        });
+        
+        // Redirect to home page
+        router.push('/');
+      } else {
+        throw new Error(data.message || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -374,97 +432,157 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="account">
-            <Card>
-              <CardHeader>
-                <CardTitle>Password Management</CardTitle>
-                <CardDescription>
-                  View your current password and set a new one
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={async (e) => {
-                  e.preventDefault();
-                  const form = e.target as HTMLFormElement;
-                  const newPassword = (form.elements.namedItem('newPassword') as HTMLInputElement).value;
-                  
-                  if (!newPassword || newPassword.length < 6) {
-                    toast({
-                      title: "Error",
-                      description: "Password must be at least 6 characters long",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  
-                  try {
-                    setIsSaving(true);
-                    const token = localStorage.getItem('token');
-                    if (!token) throw new Error('Not authenticated');
-
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
-                      method: 'PUT',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                      },
-                      body: JSON.stringify({
-                        password: newPassword
-                      })
-                    });
-
-                    const data = await response.json();
-                    if (data.success) {
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Password Management</CardTitle>
+                  <CardDescription>
+                    View your current password and set a new one
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = e.target as HTMLFormElement;
+                    const newPassword = (form.elements.namedItem('newPassword') as HTMLInputElement).value;
+                    
+                    if (!newPassword || newPassword.length < 6) {
                       toast({
-                        title: "Success",
-                        description: "Password updated successfully",
+                        title: "Error",
+                        description: "Password must be at least 6 characters long",
+                        variant: "destructive",
                       });
-                      form.reset();
-                    } else {
-                      throw new Error(data.message || 'Failed to update password');
+                      return;
                     }
-                  } catch (error) {
-                    console.error('Error updating password:', error);
-                    toast({
-                      title: "Error",
-                      description: error instanceof Error ? error.message : "Failed to update password",
-                      variant: "destructive",
-                    });
-                  } finally {
-                    setIsSaving(false);
-                  }
-                }} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password (Hashed)</Label>
-                    <Input
-                      id="currentPassword"
-                      value={profile?.password || ''}
-                      disabled
-                      className="font-mono text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      This is your current hashed password (visible for development)
-                    </p>
+                    
+                    try {
+                      setIsSaving(true);
+                      const token = localStorage.getItem('token');
+                      if (!token) throw new Error('Not authenticated');
+
+                      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                          password: newPassword
+                        })
+                      });
+
+                      const data = await response.json();
+                      if (data.success) {
+                        toast({
+                          title: "Success",
+                          description: "Password updated successfully",
+                        });
+                        form.reset();
+                      } else {
+                        throw new Error(data.message || 'Failed to update password');
+                      }
+                    } catch (error) {
+                      console.error('Error updating password:', error);
+                      toast({
+                        title: "Error",
+                        description: error instanceof Error ? error.message : "Failed to update password",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword">Current Password (Hashed)</Label>
+                      <Input
+                        id="currentPassword"
+                        value={profile?.password || ''}
+                        disabled
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        This is your current hashed password (visible for development)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        name="newPassword"
+                        placeholder="Enter new password"
+                        minLength={6}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Password must be at least 6 characters long
+                      </p>
+                    </div>
+                    <Button type="submit" disabled={isSaving}>
+                      {isSaving ? 'Updating...' : 'Update Password'}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                  <CardDescription>
+                    Permanently delete your account and all associated data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="rounded-md border border-destructive p-4">
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        <div>
+                          <h4 className="font-medium">Delete Account</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Once you delete your account, there is no going back. This action cannot be undone.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="destructive" disabled={isDeleting}>
+                              {isDeleting ? 'Deleting...' : 'Delete Account'}
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Are you absolutely sure?</DialogTitle>
+                              <DialogDescription>
+                                This action cannot be undone. This will permanently delete your account
+                                and remove all your data from our servers.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <Button 
+                                variant="outline" 
+                                onClick={() => setIsDialogOpen(false)}
+                                disabled={isDeleting}
+                              >
+                                Cancel
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                onClick={handleDeleteAccount}
+                                disabled={isDeleting}
+                              >
+                                {isDeleting ? 'Deleting...' : 'Delete Account'}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      name="newPassword"
-                      placeholder="Enter new password"
-                      minLength={6}
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Password must be at least 6 characters long
-                    </p>
-                  </div>
-                  <Button type="submit" disabled={isSaving}>
-                    {isSaving ? 'Updating...' : 'Update Password'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="integrations">

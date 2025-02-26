@@ -140,11 +140,11 @@ router.get('/user/:username', async (req, res, next) => {
   try {
     const { username } = req.params;
 
-    // Find user by displayName or name
+    // Find user by displayName or name with exact case-sensitive matching
     const user = await User.findOne({
       $or: [
-        { displayName: username },
-        { name: username }
+        { displayName: { $eq: username } },
+        { name: { $eq: username } }
       ]
     });
 

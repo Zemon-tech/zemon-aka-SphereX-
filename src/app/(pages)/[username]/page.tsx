@@ -61,26 +61,73 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
+        if (!params.username || Array.isArray(params.username)) {
+          throw new Error('Invalid username');
+        }
+
+        const token = localStorage.getItem('token');
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        };
+
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        // Try to get the profile directly first
         const response = await fetch(`${API_BASE_URL}/api/auth/users/${params.username}`, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          headers,
+          cache: 'no-store'
         });
 
-        if (!response.ok) {
-          if (response.status === 404) {
+        let profileData = null;
+        let correctUsername = '';
+
+        // If not found, try with lowercase
+        if (response.status === 404) {
+          const lowercaseResponse = await fetch(`${API_BASE_URL}/api/auth/users/${params.username.toLowerCase()}`, {
+            headers,
+            cache: 'no-store'
+          });
+
+          // If still not found with lowercase, user doesn't exist
+          if (lowercaseResponse.status === 404) {
             throw new Error('User not found');
           }
+
+          if (!lowercaseResponse.ok) {
+            throw new Error('Failed to fetch user profile');
+          }
+
+          const data = await lowercaseResponse.json();
+          if (data.success) {
+            profileData = data.data;
+            correctUsername = data.data.displayName || data.data.name;
+            setProfile(profileData);
+          } else {
+            throw new Error(data.message || 'Failed to fetch user profile');
+          }
+        } else if (!response.ok) {
           throw new Error('Failed to fetch user profile');
+        } else {
+          const data = await response.json();
+          if (data.success) {
+            profileData = data.data;
+            correctUsername = data.data.displayName || data.data.name;
+            setProfile(profileData);
+          } else {
+            throw new Error(data.message || 'Failed to fetch user profile');
+          }
         }
 
-        const data = await response.json();
-        
-        if (data.success) {
-          setProfile(data.data);
-        } else {
-          throw new Error(data.message || 'Failed to fetch user profile');
+        // Store the correct username for future use
+        if (correctUsername) {
+          localStorage.setItem(`username_case_${params.username.toLowerCase()}`, correctUsername);
         }
+
+        return { profileData, correctUsername };
       } catch (error) {
         console.error('Error fetching user profile:', error);
         toast({
@@ -89,16 +136,27 @@ export default function ProfilePage() {
           variant: "destructive",
         });
         setProfile(null);
+        return null;
       }
     };
 
-    const fetchUserStats = async () => {
+    const fetchUserStats = async (username: string) => {
       try {
+        const token = localStorage.getItem('token');
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        };
+
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         // Fetch repos count
-        const reposResponse = await fetch(`${API_BASE_URL}/api/repos/user/${params.username}`, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const reposResponse = await fetch(`${API_BASE_URL}/api/repos/user/${username}`, {
+          headers,
+          cache: 'no-store'
         });
 
         if (!reposResponse.ok) {
@@ -111,10 +169,9 @@ export default function ProfilePage() {
         const reposData = await reposResponse.json();
 
         // Fetch tools count
-        const toolsResponse = await fetch(`${API_BASE_URL}/api/store/user/${params.username}`, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const toolsResponse = await fetch(`${API_BASE_URL}/api/store/user/${username}`, {
+          headers,
+          cache: 'no-store'
         });
 
         if (!toolsResponse.ok) {
@@ -150,7 +207,17 @@ export default function ProfilePage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        await Promise.all([fetchUserProfile(), fetchUserStats()]);
+        if (!params.username || Array.isArray(params.username)) {
+          throw new Error('Invalid username');
+        }
+
+        // First fetch profile to get correct username
+        const profileResult = await fetchUserProfile();
+        
+        if (profileResult && profileResult.correctUsername) {
+          // Use the correct username for stats
+          await fetchUserStats(profileResult.correctUsername);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {

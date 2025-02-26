@@ -83,19 +83,29 @@ export default function GlobalSearch() {
         if (!response.ok) throw new Error('Search failed');
 
         const data = await response.json();
+        console.log('Raw search results:', data.results);
         
-        // Map the results to include avatars based on result type
-        const mappedResults = data.results.map((result: any) => ({
-          ...result,
-          avatar: 
-            result.type === 'user' ? result.avatar :
-            result.type === 'repo' ? result.thumbnail || result.image :
-            result.type === 'resource' ? result.thumbnail || result.image :
-            result.type === 'news' ? result.thumbnail || result.image :
-            result.type === 'event' ? result.thumbnail || result.image :
-            result.type === 'tool' ? result.thumbnail || result.image :
-            undefined
-        }));
+        // Map the results to include avatars and ensure proper URL case sensitivity
+        const mappedResults = data.results.map((result: any) => {
+          // Preserve the original URL case for user types
+          const url = result.type === 'user' 
+            ? result.url.replace(/\/([^/]+)$/, (_: string, username: string) => 
+                `/${result.originalUsername || username}`)
+            : result.url;
+
+          return {
+            ...result,
+            url,
+            avatar: 
+              result.type === 'user' ? result.avatar || result.profileImage :
+              result.type === 'repo' ? result.thumbnail || result.image || result.coverImage :
+              result.type === 'resource' ? result.thumbnail || result.image || result.coverImage :
+              result.type === 'news' ? result.thumbnail || result.image || result.coverImage :
+              result.type === 'event' ? result.thumbnail || result.image || result.coverImage :
+              result.type === 'tool' ? result.thumbnail || result.image || result.coverImage :
+              undefined
+          };
+        });
 
         setResults(mappedResults);
         setIsOpen(true);

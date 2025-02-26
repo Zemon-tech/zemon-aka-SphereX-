@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Users, Heart, MessageSquare, Share2, Trophy, ArrowLeft, User } from "lucide-react";
+import { Calendar, MapPin, Users, Heart, MessageSquare, Share2, Trophy, ArrowLeft, User, Check, Bell, BellPlus, Twitter, Linkedin, Globe, Mail, Phone, Facebook, Instagram } from "lucide-react";
 import PageContainer from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -22,16 +22,68 @@ interface Event {
   type: 'hackathon' | 'workshop' | 'conference' | 'meetup' | 'webinar';
   capacity?: number;
   registrationUrl?: string;
+  registrationDeadline?: string;
+  entryFee?: {
+    amount: number;
+    currency: string;
+  };
+  highlights?: string[];
+  speakers?: Array<{
+    name: string;
+    role?: string;
+    bio?: string;
+    image?: string;
+    social?: {
+      twitter?: string;
+      linkedin?: string;
+      website?: string;
+    };
+  }>;
+  workshops?: Array<{
+    title: string;
+    description?: string;
+    speaker?: string;
+    duration?: string;
+    requirements?: string;
+  }>;
+  eligibility?: string;
+  faqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
+  pastHighlights?: Array<{
+    title?: string;
+    description?: string;
+    image?: string;
+  }>;
+  sponsors?: Array<{
+    name: string;
+    logo?: string;
+    website?: string;
+    tier?: 'platinum' | 'gold' | 'silver' | 'bronze' | 'partner';
+  }>;
+  socialMedia?: {
+    twitter?: string;
+    facebook?: string;
+    instagram?: string;
+    linkedin?: string;
+    discord?: string;
+  };
+  contactInfo?: {
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+  };
   rewards?: string;
   image: string;
   tags: string[];
+  website?: string;
   organizer: {
     name: string;
     avatar: string;
   };
   registrations: number;
   clicks: number;
-  price?: string;
   dailyViews?: number[];
   attendees?: Array<{
     name: string;
@@ -82,8 +134,8 @@ export default function EventDetailPage() {
   const [countdown, setCountdown] = useState<CountdownTime>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [isReminderSet, setIsReminderSet] = useState(false);
 
-  const fetchEventDetail = async () => {
-    try {
+    const fetchEventDetail = async () => {
+      try {
       const token = localStorage.getItem('token');
       
       if (!token) {
@@ -104,25 +156,25 @@ export default function EventDetailPage() {
       const response = await fetch(`${API_BASE_URL}/api/events/${params.id}`, {
         headers
       });
-      const data = await response.json();
+        const data = await response.json();
       
-      if (data.success) {
-        setEvent(data.data);
+        if (data.success) {
+          setEvent(data.data);
         setIsRegistered(!!data.data.isUserRegistered);
-      } else {
-        throw new Error(data.message || 'Failed to fetch event details');
+        } else {
+          throw new Error(data.message || 'Failed to fetch event details');
+        }
+      } catch (error) {
+        console.error('Error fetching event detail:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load event details",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching event detail:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load event details",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
   useEffect(() => {
     if (params.id) {
@@ -276,218 +328,424 @@ export default function EventDetailPage() {
 
   return (
     <PageContainer className="py-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Back Button */}
-        <div className="flex items-center">
+      <div className="max-w-7xl mx-auto">
+        {/* Back Button with Breadcrumb */}
+        <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="gap-2"
+            className="gap-2 hover:bg-transparent hover:text-primary"
             onClick={() => router.push('/events')}
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Events
           </Button>
+          <span>/</span>
+          <span className="text-foreground">Event Details</span>
         </div>
 
-        {/* Hero Section */}
-        <div className="relative h-[500px] rounded-xl overflow-hidden">
+        {/* Hero Section with Gradient Overlay */}
+        <div className="relative h-[500px] rounded-xl overflow-hidden mb-8">
           <img
             src={event.image}
             alt={event.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-            <div className="flex items-center gap-4 mb-4">
-              <Badge className="bg-primary">{event.type}</Badge>
-              <Badge className="bg-secondary">{event.mode}</Badge>
-              {event.price && <Badge className="bg-accent">{event.price}</Badge>}
+            <div className="max-w-3xl">
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge className="bg-primary/20 text-primary hover:bg-primary/30">{event.mode}</Badge>
+                <Badge className="bg-secondary/20 text-secondary-foreground hover:bg-secondary/30">{event.type}</Badge>
+                {event.entryFee && event.entryFee.amount > 0 && event.entryFee.currency && (
+                  <Badge variant="outline" className="border-green-500 text-green-500">
+                    {event.entryFee.amount} {event.entryFee.currency}
+                  </Badge>
+                )}
+              </div>
+              <h1 className="text-4xl font-bold mb-4 leading-tight">{event.title}</h1>
+              <div className="flex flex-wrap gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <span>{new Date(event.date).toLocaleDateString()} at {event.time}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  <span>{event.location}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span>{event.registrations} Registered</span>
+                </div>
+              </div>
+                </div>
+              </div>
             </div>
-            <h1 className="text-4xl font-bold mb-2">{event.title}</h1>
-            <p className="text-lg opacity-90 max-w-3xl">{event.description}</p>
-          </div>
-        </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-card p-6 rounded-lg border shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">Date & Time</h3>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Quick Actions */}
+            <div className="flex flex-wrap gap-4 p-6 bg-card rounded-xl border shadow-sm">
+              <Button
+                size="lg"
+                onClick={handleRegister}
+                variant={isRegistered ? "outline" : "default"}
+                className={isRegistered ? "border-primary text-primary hover:bg-primary/5" : ""}
+              >
+                {isRegistered ? (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Registered
+                  </>
+                ) : (
+                  <>
+                    <Users className="w-4 h-4 mr-2" />
+                    Register Now
+                  </>
+                )}
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleSetReminder}
+                className="border-primary text-primary hover:bg-primary/5"
+              >
+                {isReminderSet ? (
+                  <>
+                    <Bell className="w-4 h-4 mr-2" />
+                    Reminder Set
+                  </>
+                ) : (
+                  <>
+                    <BellPlus className="w-4 h-4 mr-2" />
+                    Set Reminder
+                  </>
+                )}
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleShare}
+                className="border-primary text-primary hover:bg-primary/5"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
             </div>
-            <p>{new Date(event.date).toLocaleDateString()}</p>
-            <p className="text-muted-foreground">{event.time}</p>
+
+            {/* About Section */}
+            <div className="p-6 bg-card rounded-xl border shadow-sm">
+              <h2 className="text-2xl font-semibold mb-4">About the Event</h2>
+              <p className="text-muted-foreground whitespace-pre-wrap">{event.description}</p>
           </div>
 
-          <div className="bg-card p-6 rounded-lg border shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">Location</h3>
-            </div>
-            <p>{event.location}</p>
-            <a 
-              href={`https://maps.google.com/?q=${encodeURIComponent(event.location)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary text-sm hover:underline"
-            >
-              View on Maps
-            </a>
-          </div>
+            {/* Highlights Section */}
+            {event.highlights && event.highlights.length > 0 && (
+              <div className="p-6 bg-card rounded-xl border shadow-sm">
+                <h2 className="text-2xl font-semibold mb-4">Event Highlights</h2>
+                <div className="grid gap-4">
+                  {event.highlights.map((highlight, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="mt-1.5">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      </div>
+                      <p className="flex-1">{highlight}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          <div className="bg-card p-6 rounded-lg border shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <Users className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">Capacity</h3>
+            {/* Speakers Section */}
+            {event.speakers && event.speakers.length > 0 && (
+              <div className="p-6 bg-card rounded-xl border shadow-sm">
+                <h2 className="text-2xl font-semibold mb-6">Featured Speakers</h2>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {event.speakers.map((speaker, index) => (
+                    <div key={index} className="flex gap-4 p-4 rounded-lg bg-muted/50">
+                      <Avatar className="h-16 w-16">
+                        <AvatarImage src={speaker.image} alt={speaker.name} />
+                        <AvatarFallback className={getAvatarColor(speaker.name)}>
+                          {getInitials(speaker.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1">
+                        <h3 className="font-semibold">{speaker.name}</h3>
+                        {speaker.role && <p className="text-sm text-muted-foreground">{speaker.role}</p>}
+                        {speaker.bio && <p className="text-sm mt-2">{speaker.bio}</p>}
+                        {speaker.social && (
+                          <div className="flex gap-3 mt-3">
+                            {speaker.social.twitter && (
+                              <a href={speaker.social.twitter} target="_blank" rel="noopener noreferrer" 
+                                 className="text-muted-foreground hover:text-primary transition-colors">
+                                <Twitter className="h-4 w-4" />
+                              </a>
+                            )}
+                            {speaker.social.linkedin && (
+                              <a href={speaker.social.linkedin} target="_blank" rel="noopener noreferrer"
+                                 className="text-muted-foreground hover:text-primary transition-colors">
+                                <Linkedin className="h-4 w-4" />
+                              </a>
+                            )}
+                            {speaker.social.website && (
+                              <a href={speaker.social.website} target="_blank" rel="noopener noreferrer"
+                                 className="text-muted-foreground hover:text-primary transition-colors">
+                                <Globe className="h-4 w-4" />
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Workshops Section */}
+            {event.workshops && event.workshops.length > 0 && (
+              <div className="p-6 bg-card rounded-xl border shadow-sm">
+                <h2 className="text-2xl font-semibold mb-6">Workshop Sessions</h2>
+                <div className="grid gap-6">
+                  {event.workshops.map((workshop, index) => (
+                    <div key={index} className="p-4 rounded-lg bg-muted/50">
+                      <div className="flex items-start justify-between">
+                <div>
+                          <h3 className="font-semibold text-lg">{workshop.title}</h3>
+                          {workshop.speaker && (
+                            <p className="text-sm text-primary mt-1">By {workshop.speaker}</p>
+                          )}
+                        </div>
+                        {workshop.duration && (
+                          <Badge variant="outline" className="ml-2">
+                            {workshop.duration}
+                          </Badge>
+                        )}
+                      </div>
+                      {workshop.description && (
+                        <p className="text-muted-foreground mt-2">{workshop.description}</p>
+                      )}
+                      {workshop.requirements && (
+                        <div className="mt-4 p-3 rounded-lg bg-background">
+                          <p className="text-sm font-medium">Requirements:</p>
+                          <p className="text-sm text-muted-foreground">{workshop.requirements}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+              </div>
+
+          {/* Right Column - Event Details & Info */}
+          <div className="space-y-8">
+            {/* Countdown Timer */}
+            <div className="p-6 bg-card rounded-xl border shadow-sm">
+              <h3 className="text-lg font-semibold mb-4">Event Starts In</h3>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold text-primary">{countdown.days}</p>
+                  <p className="text-xs text-muted-foreground">Days</p>
+                </div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold text-primary">{countdown.hours}</p>
+                  <p className="text-xs text-muted-foreground">Hours</p>
+                </div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold text-primary">{countdown.minutes}</p>
+                  <p className="text-xs text-muted-foreground">Minutes</p>
+                  </div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold text-primary">{countdown.seconds}</p>
+                  <p className="text-xs text-muted-foreground">Seconds</p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <p>{event.registrations} / {event.capacity || 'Unlimited'}</p>
-              {event.capacity && (
-                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+
+            {/* Registration Progress */}
+            {event.capacity && (
+              <div className="p-6 bg-card rounded-xl border shadow-sm">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-semibold">Registration Progress</h3>
+                  <span className="text-sm text-muted-foreground">
+                    {event.registrations}/{event.capacity}
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-primary"
-                    style={{ width: `${Math.min(progressPercentage, 100)}%` }}
+                    className="h-full bg-primary transition-all duration-500"
+                    style={{ width: `${Math.min((event.registrations / event.capacity) * 100, 100)}%` }}
                   />
                 </div>
-              )}
-            </div>
-          </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {event.capacity - event.registrations} spots remaining
+                </p>
+              </div>
+            )}
 
-          <div className="bg-card p-6 rounded-lg border shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <Trophy className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">Rewards</h3>
-            </div>
-            <p>{event.rewards || 'No rewards specified'}</p>
-          </div>
-        </div>
+            {/* Contact Information */}
+            {event.contactInfo && (
+              <div className="p-6 bg-card rounded-xl border shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+                <div className="space-y-3">
+                  {event.contactInfo.email && (
+                    <a href={`mailto:${event.contactInfo.email}`} 
+                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors">
+                      <Mail className="h-4 w-4" />
+                      <span>{event.contactInfo.email}</span>
+                    </a>
+                  )}
+                  {event.contactInfo.phone && (
+                    <a href={`tel:${event.contactInfo.phone}`}
+                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors">
+                      <Phone className="h-4 w-4" />
+                      <span>{event.contactInfo.phone}</span>
+                    </a>
+                  )}
+                  {event.contactInfo.whatsapp && (
+                    <a href={`https://wa.me/${event.contactInfo.whatsapp}`}
+                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
+                       target="_blank" rel="noopener noreferrer">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>WhatsApp</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
 
-        {/* Countdown Timer */}
-        <div className="bg-card border rounded-lg p-8">
-          <h3 className="text-lg font-semibold mb-4">Time Remaining</h3>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-background rounded-lg border">
-              <div className="text-3xl font-bold text-primary">{countdown.days}</div>
-              <div className="text-sm text-muted-foreground">Days</div>
-            </div>
-            <div className="text-center p-4 bg-background rounded-lg border">
-              <div className="text-3xl font-bold text-primary">{countdown.hours}</div>
-              <div className="text-sm text-muted-foreground">Hours</div>
-            </div>
-            <div className="text-center p-4 bg-background rounded-lg border">
-              <div className="text-3xl font-bold text-primary">{countdown.minutes}</div>
-              <div className="text-sm text-muted-foreground">Minutes</div>
-            </div>
-            <div className="text-center p-4 bg-background rounded-lg border">
-              <div className="text-3xl font-bold text-primary">{countdown.seconds}</div>
-              <div className="text-sm text-muted-foreground">Seconds</div>
-            </div>
-          </div>
-        </div>
+            {/* Social Media Links */}
+            {event.socialMedia && Object.values(event.socialMedia).some(Boolean) && (
+              <div className="p-6 bg-card rounded-xl border shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Connect With Us</h3>
+                <div className="flex flex-wrap gap-4">
+                  {event.socialMedia.twitter && (
+                    <a href={event.socialMedia.twitter} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                      <Twitter className="h-4 w-4" />
+                      <span>Twitter</span>
+                    </a>
+                  )}
+                  {event.socialMedia.facebook && (
+                    <a href={event.socialMedia.facebook} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                      <Facebook className="h-4 w-4" />
+                      <span>Facebook</span>
+                    </a>
+                  )}
+                  {event.socialMedia.instagram && (
+                    <a href={event.socialMedia.instagram} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                      <Instagram className="h-4 w-4" />
+                      <span>Instagram</span>
+                    </a>
+                  )}
+                  {event.socialMedia.linkedin && (
+                    <a href={event.socialMedia.linkedin} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                      <Linkedin className="h-4 w-4" />
+                      <span>LinkedIn</span>
+                    </a>
+                  )}
+                  {event.socialMedia.discord && (
+                    <a href={event.socialMedia.discord} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Discord</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
 
-        {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row gap-4 mt-8">
-          <Button 
-            size="lg" 
-            className="flex-1 md:flex-none"
-            onClick={handleRegister}
-            variant={isRegistered ? "destructive" : "default"}
-          >
-            {isRegistered ? 'Unregister' : 'Register Now'}
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="flex-1 md:flex-none"
-            onClick={handleSetReminder}
-          >
-            {isReminderSet ? 'Remove Reminder' : 'Set Reminder'}
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="flex-1 md:flex-none"
-            onClick={handleShare}
-          >
-            <Share2 className="w-4 h-4 mr-2" />
-            Share
-          </Button>
-        </div>
-
-        {/* Organizer Info */}
-        <div className="bg-card border rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Organizer</h3>
-          <div className="flex items-center gap-4">
-            <Avatar className="w-12 h-12">
-              <AvatarImage 
-                src={event.organizer?.avatar} 
-                alt={event.organizer?.name || 'Organizer'} 
-              />
-              <AvatarFallback 
-                className={`${getAvatarColor(event.organizer?.name)} text-foreground font-medium flex items-center justify-center`}
-              >
-                {event.organizer?.name ? (
-                  getInitials(event.organizer.name)
-                ) : (
-                  <User className="w-6 h-6 text-muted-foreground" />
-                )}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold">{event.organizer?.name || 'Anonymous'}</p>
-              <p className="text-sm text-muted-foreground">Organizer</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tags */}
-        {event.tags && event.tags.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Tags</h3>
+            {/* Tags */}
+            {event.tags && event.tags.length > 0 && (
+              <div className="p-6 bg-card rounded-xl border shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Tags</h3>
             <div className="flex flex-wrap gap-2">
-              {event.tags.map((tag, index) => (
-                <Badge key={index} variant="secondary">
+                  {event.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="bg-muted">
                   {tag}
                 </Badge>
+              ))}
+            </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* FAQs Section */}
+        {event.faqs && event.faqs.length > 0 && (
+          <div className="mt-8 p-6 bg-card rounded-xl border shadow-sm">
+            <h2 className="text-2xl font-semibold mb-6">Frequently Asked Questions</h2>
+            <div className="grid gap-4">
+              {event.faqs.map((faq, index) => (
+                <div key={index} className="p-4 rounded-lg bg-muted/50">
+                  <h3 className="font-medium text-lg mb-2">{faq.question}</h3>
+                  <p className="text-muted-foreground">{faq.answer}</p>
+                </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Event Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-card border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Event Stats</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Total Clicks</span>
-                <span className="font-medium">{event.clicks}</span>
+        {/* Sponsors Section */}
+        {event.sponsors && event.sponsors.length > 0 && (
+          <div className="mt-8 p-6 bg-card rounded-xl border shadow-sm">
+            <h2 className="text-2xl font-semibold mb-6">Our Sponsors</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {event.sponsors.map((sponsor, index) => (
+                <div key={index} className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
+                  {sponsor.logo ? (
+                    <img 
+                      src={sponsor.logo} 
+                      alt={sponsor.name}
+                      className="h-20 w-auto object-contain mb-3"
+                    />
+                  ) : (
+                    <div className="h-20 w-full bg-muted rounded-lg flex items-center justify-center mb-3">
+                      {sponsor.name}
+                    </div>
+                  )}
+                  <h3 className="font-medium">{sponsor.name}</h3>
+                  {sponsor.tier && (
+                    <Badge variant="outline" className="mt-2">
+                      {sponsor.tier}
+                    </Badge>
+                  )}
+                  {sponsor.website && (
+                    <a 
+                      href={sponsor.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline mt-2"
+                    >
+                      Visit Website
+                    </a>
+                  )}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Registrations</span>
-                <span className="font-medium">{event.registrations}</span>
-              </div>
+              ))}
             </div>
           </div>
+        )}
 
-          {event.dailyViews && event.dailyViews.length > 0 && (
-            <div className="bg-card border rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">Daily Views</h3>
-              <div className="h-[200px] flex items-end gap-2">
-                {event.dailyViews.map((views, index) => (
-                  <div
-                    key={index}
-                    className="bg-primary/20 hover:bg-primary/30 transition-colors rounded-t w-full"
-                    style={{
-                      height: `${(views / Math.max(...event.dailyViews!)) * 100}%`
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Website Link */}
+        {event.website && (
+          <div className="mt-8 flex justify-center">
+            <Button
+              variant="outline"
+              size="lg"
+              className="gap-2"
+              onClick={() => window.open(event.website, '_blank')}
+            >
+              <Globe className="w-4 h-4" />
+              Visit Official Website
+            </Button>
+          </div>
+        )}
       </div>
     </PageContainer>
   );

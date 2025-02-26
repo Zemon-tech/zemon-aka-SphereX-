@@ -10,6 +10,7 @@ import SearchAndFilter from "@/components/layout/SearchAndFilter";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { API_BASE_URL } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 interface Event {
   _id: string;
@@ -42,6 +43,7 @@ export default function EventsPage() {
   const [filterValue, setFilterValue] = useState("all");
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const filterOptions = [
     { label: "All Events", value: "all" },
@@ -95,50 +97,46 @@ export default function EventsPage() {
     fetchEvents();
   }, [searchValue, filterValue]);
 
-  const handleSubmitEvent = async (formData: FormData) => {
+  const handleSubmitEvent = async (formData: any) => {
     try {
-      const eventData = Object.fromEntries(formData);
-      console.log('Submitting event data:', eventData);
+      console.log('Submitting event data:', formData);
 
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('Please log in to create an event');
+        toast({
+          title: "Error",
+          description: "Please login to create an event",
+          variant: "destructive",
+        });
+        router.push('/auth/login');
+        return;
       }
 
       const response = await fetch(`${API_BASE_URL}/api/events`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...eventData,
-          tags: eventData.tags ? String(eventData.tags).split(',').map(tag => tag.trim()) : [],
-          image: eventData.image || '/placeholder-event.jpg'
-        }),
+        body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create event");
-      }
-
       const data = await response.json();
+      
       if (data.success) {
         toast({
           title: "Success",
           description: "Event created successfully",
         });
-        setShowAddForm(false);
-        fetchEvents();
+        router.push(`/events/${data.data._id}`);
       } else {
-        throw new Error(data.message || "Failed to create event");
+        throw new Error(data.message || 'Failed to create event');
       }
     } catch (error) {
-      console.error("Error creating event:", error);
+      console.error('Error creating event:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create event",
+        description: "Failed to create event",
         variant: "destructive",
       });
     }
@@ -225,6 +223,13 @@ export default function EventsPage() {
         }
       />
 
+      {showAddForm && (
+        <EventForm 
+          onSubmit={handleSubmitEvent} 
+          onCancel={() => setShowAddForm(false)}
+        />
+      )}
+
       <SearchAndFilter
         value={searchValue}
         onChange={setSearchValue}
@@ -273,13 +278,6 @@ export default function EventsPage() {
           </div>
         )}
       </div>
-
-      {showAddForm && (
-        <EventForm
-          onSubmit={handleSubmitEvent}
-          onCancel={() => setShowAddForm(false)}
-        />
-      )}
     </PageContainer>
   );
 } 

@@ -72,6 +72,58 @@ export interface IEvent extends Document {
   type: 'hackathon' | 'workshop' | 'conference' | 'meetup' | 'webinar';
   capacity?: number;
   registrationUrl?: string;
+  registrationDeadline?: Date;
+  entryFee?: {
+    amount: number;
+    currency: string;
+  };
+  keyHighlights?: string[];
+  speakers?: Array<{
+    name: string;
+    role?: string;
+    bio?: string;
+    image?: string;
+    social?: {
+      twitter?: string;
+      linkedin?: string;
+      website?: string;
+    };
+  }>;
+  workshops?: Array<{
+    title: string;
+    description?: string;
+    speaker?: string;
+    duration?: string;
+    requirements?: string;
+  }>;
+  eligibility?: string;
+  faqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
+  pastHighlights?: Array<{
+    title?: string;
+    description?: string;
+    image?: string;
+  }>;
+  sponsors?: Array<{
+    name: string;
+    logo?: string;
+    website?: string;
+    tier?: 'platinum' | 'gold' | 'silver' | 'bronze' | 'partner';
+  }>;
+  socialMedia?: {
+    twitter?: string;
+    facebook?: string;
+    instagram?: string;
+    linkedin?: string;
+    discord?: string;
+  };
+  contactInfo?: {
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+  };
   rewards?: string;
   image: string;
   tags: string[];

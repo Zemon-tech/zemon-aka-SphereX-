@@ -40,6 +40,90 @@ const eventSchema = new Schema<IEvent>({
   registrationUrl: {
     type: String
   },
+  registrationDeadline: {
+    type: Date
+  },
+  entryFee: {
+    amount: {
+      type: Number,
+      default: 0
+    },
+    currency: {
+      type: String,
+      default: 'USD'
+    }
+  },
+  keyHighlights: [{
+    type: String,
+    trim: true
+  }],
+  speakers: [{
+    name: {
+      type: String,
+      required: true
+    },
+    role: String,
+    bio: String,
+    image: String,
+    social: {
+      twitter: String,
+      linkedin: String,
+      website: String
+    }
+  }],
+  workshops: [{
+    title: {
+      type: String,
+      required: true
+    },
+    description: String,
+    speaker: String,
+    duration: String,
+    requirements: String
+  }],
+  eligibility: {
+    type: String
+  },
+  faqs: [{
+    question: {
+      type: String,
+      required: true
+    },
+    answer: {
+      type: String,
+      required: true
+    }
+  }],
+  pastHighlights: [{
+    title: String,
+    description: String,
+    image: String
+  }],
+  sponsors: [{
+    name: {
+      type: String,
+      required: true
+    },
+    logo: String,
+    website: String,
+    tier: {
+      type: String,
+      enum: ['platinum', 'gold', 'silver', 'bronze', 'partner'],
+      default: 'partner'
+    }
+  }],
+  socialMedia: {
+    twitter: String,
+    facebook: String,
+    instagram: String,
+    linkedin: String,
+    discord: String
+  },
+  contactInfo: {
+    email: String,
+    phone: String,
+    whatsapp: String
+  },
   rewards: {
     type: String
   },

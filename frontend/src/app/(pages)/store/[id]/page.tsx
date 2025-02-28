@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Star, Globe, Book, Code, MessageSquare, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, Star, Book, Code } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import PageContainer from "@/components/layout/PageContainer";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { API_BASE_URL } from "@/lib/api";
+import Image from "next/image";
 
 interface ToolDetails {
   _id: string;
@@ -51,11 +52,10 @@ interface ToolDetails {
   }>;
 }
 
-export default function ToolDetailsPage() {
+export default function StoreItemPage() {
   const params = useParams();
   const { toast } = useToast();
   const [tool, setTool] = useState<ToolDetails | null>(null);
-  const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
   const [userReview, setUserReview] = useState<{ rating: number; comment: string; } | null>(null);
   const [newImageUrl, setNewImageUrl] = useState("");
@@ -63,10 +63,8 @@ export default function ToolDetailsPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (params.id) {
-      fetchStoreItem();
-    }
-  }, [params.id, toast]);
+    fetchStoreItem();
+  }, [params.id]);
 
   useEffect(() => {
     // Find user's review when tool data is loaded
@@ -218,10 +216,12 @@ export default function ToolDetailsPage() {
         {/* Hero Section */}
         <div className="flex items-start gap-8 mb-12">
           <div className="relative w-40 h-40">
-            <img
+            <Image
               src={tool.thumbnail}
-              alt={tool.name}
-              className="w-full h-full rounded-3xl object-cover shadow-lg"
+              alt={`${tool.name} thumbnail`}
+              width={500}
+              height={300}
+              className="w-full h-auto rounded-lg"
             />
           </div>
 
@@ -240,7 +240,6 @@ export default function ToolDetailsPage() {
                   className="gap-2"
                 >
                   Visit Tool
-                  <ArrowUpRight className="w-4 h-4" />
                 </Button>
                 {tool.dev_docs && (
                   <Button 
@@ -309,7 +308,7 @@ export default function ToolDetailsPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-semibold">Images</h2>
-                {currentUserId === tool.author._id && (
+                {currentUserId && tool?.author?._id && currentUserId === tool.author._id && (
                   <div className="flex items-center gap-4">
                     <Input
                       type="url"
@@ -334,9 +333,11 @@ export default function ToolDetailsPage() {
                     {tool.images.map((image, index) => (
                       <CarouselItem key={index}>
                         <div className="aspect-video w-full overflow-hidden rounded-xl">
-                          <img
+                          <Image
                             src={image}
-                            alt={`${tool.name} screenshot ${index + 1}`}
+                            alt={`${tool.name} screenshot`}
+                            width={800}
+                            height={600}
                             className="w-full h-full object-cover"
                           />
                         </div>

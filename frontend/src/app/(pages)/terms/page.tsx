@@ -1,7 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FileText, CheckCircle, AlertCircle, HelpCircle } from "lucide-react";
+import { HelpCircle } from "lucide-react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import PageContainer from "@/components/layout/PageContainer";
 
 export default function TermsPage() {

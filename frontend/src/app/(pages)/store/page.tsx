@@ -1,14 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import StoreCard from "@/components/store/StoreCard";
-import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import PageContainer from "@/components/layout/PageContainer";
-import PageHeader from "@/components/layout/PageHeader";
 import SearchAndFilter from "@/components/layout/SearchAndFilter";
-import GridLayout from "@/components/layout/GridLayout";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import ToolForm from "@/components/store/ToolForm";
 import { useToast } from "@/components/ui/use-toast";
@@ -46,36 +42,7 @@ export default function StorePage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const filterOptions = [
-    { label: "All Categories", value: "all" },
-    { label: "Developer Tools", value: "Developer Tools" },
-    { label: "Productivity", value: "Productivity" },
-    { label: "Design", value: "Design" },
-    { label: "Testing", value: "Testing" },
-    { label: "Analytics", value: "Analytics" },
-    { label: "DevOps", value: "DevOps" },
-    { label: "Security", value: "Security" },
-    { label: "Database", value: "Database" },
-  ];
-
-  useEffect(() => {
-    // Get current user ID from token
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const tokenData = JSON.parse(atob(token.split('.')[1]));
-        setCurrentUserId(tokenData.id);
-      } catch (error) {
-        console.error('Error decoding token:', error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStoreItems();
-  }, []);
-
-  const fetchStoreItems = async () => {
+  const fetchStoreItems = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store`);
       const data = await response.json();
@@ -94,7 +61,24 @@ export default function StorePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    // Get current user ID from token
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        setCurrentUserId(tokenData.id);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStoreItems();
+  }, [fetchStoreItems]);
 
   const handleSubmitTool = async (formData: FormData) => {
     try {

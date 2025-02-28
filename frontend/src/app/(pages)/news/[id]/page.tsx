@@ -9,7 +9,7 @@ import PageContainer from "@/components/layout/PageContainer";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import NewsCard from "@/components/news/NewsCard";
+import Image from "next/image";
 
 interface NewsDetail {
   _id: string;
@@ -64,24 +64,24 @@ export default function NewsDetailPage() {
 
           // Transform the data to ensure proper date and views
           const transformedRelated = relatedData.data.news
-            .filter((item: any) => item._id !== params.id)
+            .filter((item: RelatedNews) => item._id !== params.id)
             .slice(0, 3)
-            .map((item: any) => ({
+            .map((item: RelatedNews) => ({
               _id: item._id,
               title: item.title,
               category: item.category,
-              date: item.createdAt || new Date().toISOString(), // Use createdAt or fallback
+              date: item.date || new Date().toISOString(),
               image: item.image || '/placeholder-news.jpg',
               excerpt: item.excerpt,
-              views: typeof item.views === 'number' ? item.views : 0 // Ensure views is a number
+              views: typeof item.views === 'number' ? item.views : 0
             }));
 
           setRelatedNews(transformedRelated);
         } else {
           throw new Error(newsData.message || 'Failed to fetch news detail');
         }
-      } catch (error) {
-        console.error('Error:', error);
+      } catch {
+        console.error('Error fetching news detail');
         toast({
           title: "Error",
           description: "Failed to load content",
@@ -222,10 +222,12 @@ export default function NewsDetailPage() {
           {/* Featured Image */}
           {news.image && (
             <div className="relative h-[400px] rounded-xl overflow-hidden shadow-lg">
-              <img
+              <Image
                 src={news.image}
                 alt={news.title}
-                className="w-full h-full object-cover"
+                className="object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </div>
           )}
@@ -312,10 +314,12 @@ export default function NewsDetailPage() {
                     <div className="space-y-3 hover:bg-muted/50 rounded-lg transition-colors p-2 -mx-2">
                       {/* Image Container */}
                       <div className="relative aspect-[16/9] rounded-lg overflow-hidden">
-                        <img
+                        <Image
                           src={article.image}
                           alt={article.title}
-                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                          className="object-cover transform group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="absolute bottom-2 left-2">

@@ -1,27 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, GitBranch, Star, Users, GitFork, AlertCircle, GitPullRequest } from "lucide-react";
+import { useParams } from "next/navigation";
+import { ArrowLeft, Star, GitFork, AlertCircle, GitPullRequest } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import PageContainer from "@/components/layout/PageContainer";
-import {
-  LineChart,
-  PieChart,
-  BarChart,
-  ResponsiveContainer,
-} from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Github } from "lucide-react";
+import Image from "next/image";
 import OverviewTab from "@/components/repos/tabs/OverviewTab";
 import ActivityTab from "@/components/repos/tabs/ActivityTab";
 import ContributorsTab from "@/components/repos/tabs/ContributorsTab";
@@ -32,14 +26,6 @@ interface StatCardProps {
   title: string;
   value: number;
   icon: React.ReactNode;
-}
-
-interface Contributor {
-  login: string;
-  avatar_url: string;
-  contributions: number;
-  pullRequests: number;
-  reviews: number;
 }
 
 interface Repository {
@@ -90,13 +76,42 @@ interface Repository {
   }>;
 }
 
+interface GithubData {
+  repoData?: {
+    readme: string;
+  };
+  languages?: string[];
+  branches?: string[];
+  commits: Array<{
+    date: string;
+    commits: number;
+  }>;
+  repoInfo?: {
+    owner: string;
+    name: string;
+    defaultBranch: string;
+  };
+  activityData: Array<{
+    date: string;
+    commits: number;
+    pullRequests: number;
+  }>;
+  pullRequests: Array<{
+    id: number;
+    title: string;
+    number: number;
+    state: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}
+
 export default function RepoDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const { toast } = useToast();
   const [repo, setRepo] = useState<Repository | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [githubData, setGithubData] = useState<any>(null);
+  const [githubData, setGithubData] = useState<GithubData | null>(null);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -110,13 +125,8 @@ export default function RepoDetailPage() {
         if (data.success) {
           setRepo(data.data);
           
-          // Extract owner and repo name from github_url
-          const githubUrlParts = data.data.github_url.split('/');
-          const owner = githubUrlParts[githubUrlParts.length - 2];
-          const repoName = githubUrlParts[githubUrlParts.length - 1];
-          
           // Fetch GitHub data
-          const githubData = await getRepoDetails(owner, repoName);
+          const githubData = await getRepoDetails(data.data.owner, data.data.name);
           setGithubData(githubData);
         } else {
           throw new Error(data.message || 'Failed to fetch repository details');
@@ -182,11 +192,13 @@ export default function RepoDetailPage() {
 
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center">
-              <img
+            <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center relative">
+              <Image
                 src={repo.avatar || "/Z.jpg"}
                 alt={repo.name}
                 className="h-12 w-12"
+                width={48}
+                height={48}
               />
             </div>
             <div>

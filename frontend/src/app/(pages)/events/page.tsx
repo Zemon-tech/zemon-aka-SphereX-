@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Download, Plus } from "lucide-react";
 import EventCard from "@/components/events/EventCard";
 import EventForm from "@/components/events/EventForm";
@@ -66,8 +66,9 @@ export default function EventsPage() {
     }
   }, []);
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
+      setIsLoading(true);
       const queryParams = new URLSearchParams();
       if (filterValue !== "all") {
         queryParams.append("type", filterValue);
@@ -78,26 +79,54 @@ export default function EventsPage() {
 
       const response = await fetch(`${API_BASE_URL}/api/events?${queryParams}`);
       const data = await response.json();
+      
       if (data.success) {
-        setEvents(data.data.events);
+        const eventsList = Array.isArray(data.data.events) ? data.data.events : [];
+        setEvents(eventsList);
+        
+        if (eventsList.length === 0) {
+          console.log('No events found in response');
+        }
+      } else {
+        console.error('Failed to fetch events:', data.message);
+        toast({
+          title: "Error",
+          description: data.message || "Failed to load events",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error("Error fetching events:", error);
+      console.error('Error fetching events:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch events",
+        description: "Failed to load events",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchValue, filterValue, toast]);
 
   useEffect(() => {
     fetchEvents();
-  }, [searchValue, filterValue]);
+  }, [fetchEvents]);
 
-  const handleSubmitEvent = async (formData: any) => {
+  interface EventFormData {
+    title: string;
+    description: string;
+    date: string;
+    time: string;
+    location: string;
+    type: string;
+    mode: string;
+    capacity?: number;
+    registrationUrl?: string;
+    rewards?: string;
+    image: string;
+    tags: string[];
+  }
+
+  const handleSubmitEvent = async (formData: EventFormData) => {
     try {
       console.log('Submitting event data:', formData);
 
@@ -251,7 +280,7 @@ export default function EventsPage() {
           Array(6).fill(0).map((_, i) => (
             <div key={i} className="bg-card animate-pulse rounded-lg p-4 h-64" />
           ))
-        ) : events.length > 0 ? (
+        ) : events && events.length > 0 ? (
           events.map((event) => (
             <EventCard
               key={event._id}
@@ -262,6 +291,7 @@ export default function EventsPage() {
                 date: new Date(event.date).toLocaleDateString(),
                 time: event.time,
                 location: event.location,
+                mode: (event.mode as 'online' | 'in-person' | 'hybrid') || 'in-person',
                 attendees: event.registrations,
                 price: event.registrationUrl ? "Paid" : "Free",
                 rewards: event.rewards || "",
@@ -269,12 +299,12 @@ export default function EventsPage() {
                 tags: event.tags,
                 organizer: event.organizer
               }}
-              onDelete={() => handleDeleteEvent(event._id)}
+              onDelete={isAdmin ? () => handleDeleteEvent(event._id) : undefined}
             />
           ))
         ) : (
           <div className="col-span-full text-center py-12 text-muted-foreground">
-            No events found
+            No events found. {searchValue || filterValue !== 'all' ? 'Try adjusting your search or filter.' : ''}
           </div>
         )}
       </div>

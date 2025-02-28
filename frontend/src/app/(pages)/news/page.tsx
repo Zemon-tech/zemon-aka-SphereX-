@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import PageContainer from "@/components/layout/PageContainer";
@@ -36,15 +35,7 @@ export default function NewsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
-  const filterOptions = [
-    { label: "All Categories", value: "all" },
-    { label: "Framework Updates", value: "Framework Updates" },
-    { label: "Security", value: "Security" },
-    { label: "Community", value: "Community" },
-    { label: "Tutorials", value: "Tutorials" },
-  ];
-
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
@@ -55,8 +46,7 @@ export default function NewsPage() {
       });
       const data = await response.json();
       if (data.success) {
-        // Map the news data to match the expected format
-        const mappedNews = data.data.news.map((article: any) => ({
+        const mappedNews = data.data.news.map((article: NewsArticle) => ({
           _id: article._id,
           title: article.title,
           content: article.content,
@@ -82,11 +72,11 @@ export default function NewsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchNews();
-  }, []);
+  }, [fetchNews, toast]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');

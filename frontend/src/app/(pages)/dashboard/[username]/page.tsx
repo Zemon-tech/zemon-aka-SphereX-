@@ -13,11 +13,11 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { validateUserData } from '@/utils/auth';
 import { Card, CardContent } from "@/components/ui/card";
 import GitHubStats from "@/components/dashboard/GitHubStats";
 import GitHubRepos from "@/components/dashboard/GitHubRepos";
 import { fetchGitHubProfile } from "@/lib/github";
+import Image from "next/image";
 
 interface User {
   _id?: string;
@@ -155,7 +155,7 @@ export default function UserDashboardPage() {
               
               // Set GitHub repositories
               setGithubRepos(githubData.repositories.map(repo => ({
-                id: Math.random(), // Generate a random ID since we don't have the actual ID
+                id: Math.random(),
                 name: repo.name,
                 description: repo.description,
                 html_url: repo.html_url,
@@ -216,7 +216,7 @@ export default function UserDashboardPage() {
     if (username) {
       fetchProfileUser();
     }
-  }, [username, router]);
+  }, [username, router, toast]);
 
   // Check if the current user is viewing their own profile
   useEffect(() => {
@@ -229,26 +229,25 @@ export default function UserDashboardPage() {
           setIsCurrentUserProfile(false);
           return;
         }
-        
-        const userData = JSON.parse(storedUser);
-        if (!validateUserData(userData)) {
+
+        const user = JSON.parse(storedUser);
+        if (user.username === username) {
+          setIsCurrentUserProfile(true);
+        } else {
           setIsCurrentUserProfile(false);
-          return;
         }
-        
-        setUser(userData);
-        
-        // Check if the profile being viewed belongs to the current user
-        const isOwnProfile = userData.displayName === username || userData.name === username;
-        setIsCurrentUserProfile(isOwnProfile);
       } catch (error) {
         console.error('Error checking current user:', error);
-        setIsCurrentUserProfile(false);
+        toast({
+          title: "Error",
+          description: "Failed to verify user profile access.",
+          variant: "destructive",
+        });
       }
     };
-    
+
     checkCurrentUser();
-  }, [username]);
+  }, [username, toast]);
 
   const handleShareProfile = async () => {
     try {
@@ -606,10 +605,11 @@ export default function UserDashboardPage() {
                       <Card key={tool._id} className="overflow-hidden border border-muted/50 hover:border-primary/30 transition-colors hover:shadow-md">
                         {tool.thumbnail && (
                           <div className="aspect-video relative">
-                            <img 
+                            <Image 
                               src={tool.thumbnail} 
                               alt={tool.name} 
-                              className="object-cover w-full h-full"
+                              fill
+                              className="object-cover"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-end">
                               <div className="p-4 w-full">

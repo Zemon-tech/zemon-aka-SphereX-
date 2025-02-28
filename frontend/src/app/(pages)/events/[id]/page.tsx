@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Calendar, MapPin, Users, Heart, MessageSquare, Share2, Trophy, ArrowLeft, User, Check, Bell, BellPlus, Twitter, Linkedin, Globe, Mail, Phone, Facebook, Instagram } from "lucide-react";
+import { Calendar, MapPin, Users, MessageSquare, Share2, ArrowLeft, Check, Bell, BellPlus, Twitter, Linkedin, Globe, Mail, Phone, Facebook, Instagram } from "lucide-react";
+import Image from "next/image";
 import PageContainer from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { API_BASE_URL } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Event {
   _id: string;
@@ -134,8 +134,9 @@ export default function EventDetailPage() {
   const [countdown, setCountdown] = useState<CountdownTime>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [isReminderSet, setIsReminderSet] = useState(false);
 
-    const fetchEventDetail = async () => {
-      try {
+  const fetchEventDetail = useCallback(async () => {
+    try {
+      setIsLoading(true);
       const token = localStorage.getItem('token');
       
       if (!token) {
@@ -156,31 +157,33 @@ export default function EventDetailPage() {
       const response = await fetch(`${API_BASE_URL}/api/events/${params.id}`, {
         headers
       });
-        const data = await response.json();
       
-        if (data.success) {
-          setEvent(data.data);
-        setIsRegistered(!!data.data.isUserRegistered);
-        } else {
-          throw new Error(data.message || 'Failed to fetch event details');
-        }
-      } catch (error) {
-        console.error('Error fetching event detail:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load event details",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to fetch event details');
       }
-    };
+      
+      const data = await response.json();
+      if (data.success) {
+        setEvent(data.data);
+        setIsRegistered(!!data.data.isUserRegistered);
+      } else {
+        throw new Error(data.message || 'Failed to fetch event details');
+      }
+    } catch (error) {
+      console.error('Error fetching event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load event details",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [params.id, router, toast]);
 
   useEffect(() => {
-    if (params.id) {
-      fetchEventDetail();
-    }
-  }, [params.id]);
+    fetchEventDetail();
+  }, [fetchEventDetail]);
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -322,10 +325,6 @@ export default function EventDetailPage() {
     );
   }
 
-  const progressPercentage = event.capacity 
-    ? (event.registrations / event.capacity) * 100 
-    : 0;
-
   return (
     <PageContainer className="py-6">
       <div className="max-w-7xl mx-auto">
@@ -346,11 +345,15 @@ export default function EventDetailPage() {
 
         {/* Hero Section with Gradient Overlay */}
         <div className="relative h-[500px] rounded-xl overflow-hidden mb-8">
-          <img
-            src={event.image}
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
+          <div className="relative w-full h-full">
+            <Image
+              src={event.image}
+              alt={event.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
             <div className="max-w-3xl">
@@ -379,8 +382,8 @@ export default function EventDetailPage() {
                 </div>
               </div>
                 </div>
+                </div>
               </div>
-            </div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -465,12 +468,22 @@ export default function EventDetailPage() {
                 <div className="grid sm:grid-cols-2 gap-6">
                   {event.speakers.map((speaker, index) => (
                     <div key={index} className="flex gap-4 p-4 rounded-lg bg-muted/50">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src={speaker.image} alt={speaker.name} />
-                        <AvatarFallback className={getAvatarColor(speaker.name)}>
-                          {getInitials(speaker.name)}
-                        </AvatarFallback>
-                      </Avatar>
+                      {speaker.image ? (
+                        <div className="relative w-24 h-24">
+                          <Image
+                            src={speaker.image}
+                            alt={speaker.name}
+                            fill
+                            className="object-cover rounded-full"
+                          />
+                        </div>
+                      ) : (
+                        <Avatar className="h-24 w-24">
+                          <AvatarFallback className={getAvatarColor(speaker.name)}>
+                            {getInitials(speaker.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                       <div className="space-y-1">
                         <h3 className="font-semibold">{speaker.name}</h3>
                         {speaker.role && <p className="text-sm text-muted-foreground">{speaker.role}</p>}
@@ -700,14 +713,18 @@ export default function EventDetailPage() {
               {event.sponsors.map((sponsor, index) => (
                 <div key={index} className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
                   {sponsor.logo ? (
-                    <img 
-                      src={sponsor.logo} 
-                      alt={sponsor.name}
-                      className="h-20 w-auto object-contain mb-3"
-                    />
+                    <div className="relative h-20 w-auto">
+                      <Image 
+                        src={sponsor.logo}
+                        alt={sponsor.name}
+                        width={100}
+                        height={50}
+                        className="object-contain"
+                      />
+                    </div>
                   ) : (
-                    <div className="h-20 w-full bg-muted rounded-lg flex items-center justify-center mb-3">
-                      {sponsor.name}
+                    <div className="h-20 w-auto flex items-center justify-center">
+                      <span className="text-lg font-medium">{sponsor.name}</span>
                     </div>
                   )}
                   <h3 className="font-medium">{sponsor.name}</h3>

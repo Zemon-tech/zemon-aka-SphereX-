@@ -17,7 +17,7 @@ export default function ContactPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <div>
             <p className="text-lg text-muted-foreground mb-8">
-              Have questions about Zemon? We're here to help! Get in touch with our team.
+              Have questions about Zemon? We&apos;re here to help! Get in touch with our team.
             </p>
 
             <div className="space-y-6">

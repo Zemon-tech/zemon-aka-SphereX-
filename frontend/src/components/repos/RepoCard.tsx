@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Star, GitFork, Eye, GitBranch, Code, MessageCircle, GitPullRequest, ExternalLink, Github, Trash2 } from "lucide-react";
+import { Star, GitFork, MoreVertical, Trash2, Github, GitBranch } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -25,15 +25,15 @@ interface RepoCardProps {
   stars: number;
   forks: number;
   language: string;
-  githubUrl: string;
   updatedAt: string;
+  githubUrl: string;
   creator: {
-    name: string;
-    id: string;
+    name: string | undefined;
+    id: string | undefined;
   };
-  currentUserId?: string | null;
-  onDelete?: () => void;
-  onGitHubClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  currentUserId: string | null;
+  onDelete: () => void;
+  onClick: () => void;
 }
 
 export default function RepoCard({
@@ -43,12 +43,12 @@ export default function RepoCard({
   stars,
   forks,
   language,
-  githubUrl,
   updatedAt,
+  githubUrl,
   creator,
   currentUserId,
   onDelete,
-  onGitHubClick
+  onClick
 }: RepoCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -142,7 +142,11 @@ export default function RepoCard({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={onGitHubClick}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(githubUrl, '_blank');
+                  }}
                   title="View on GitHub"
                 >
                   <Github className="w-4 h-4" />
@@ -152,9 +156,9 @@ export default function RepoCard({
                     variant="ghost" 
                     size="icon"
                     className="h-8 w-8"
-                    title="View Details"
+                    title="View Repository Details"
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <GitBranch className="w-4 h-4" />
                   </Button>
                 </Link>
                 {currentUserId === creator.id && (
@@ -213,7 +217,7 @@ export default function RepoCard({
           <DialogHeader>
             <DialogTitle>Delete Repository</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{name}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end sm:justify-start">

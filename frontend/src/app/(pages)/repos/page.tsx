@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Plus, GitBranch, Star, ArrowUpDown } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, GitBranch, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import PageContainer from "@/components/layout/PageContainer";
 import PageHeader from "@/components/layout/PageHeader";
@@ -55,7 +54,7 @@ export default function ReposPage() {
     { label: "Rust", value: "rust" },
   ];
 
-  const fetchRepos = async () => {
+  const fetchRepos = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/repos`, {
@@ -81,7 +80,7 @@ export default function ReposPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchRepos();
@@ -116,7 +115,7 @@ export default function ReposPage() {
         setCurrentUserId(null);
       }
     }
-  }, []);
+  }, [fetchRepos]);
 
   const handleSubmitProject = async (formData: FormData) => {
     try {
@@ -170,14 +169,6 @@ export default function ReposPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCardClick = (repoId: string) => {
-    router.push(`/repos/${repoId}`);
-  };
-
-  const handleGitHubClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
-    e.stopPropagation(); // Prevent card click when clicking GitHub link
   };
 
   const handleAddProjectClick = () => {
@@ -303,10 +294,7 @@ export default function ReposPage() {
               }}
               currentUserId={currentUserId}
               onDelete={fetchRepos}
-              onGitHubClick={(e) => {
-                e.preventDefault();
-                window.open(repo.github_url, '_blank');
-              }}
+              onClick={() => router.push(`/repos/${repo._id}`)}
             />
           ))
         ) : (

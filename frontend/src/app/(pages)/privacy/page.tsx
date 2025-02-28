@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield, Lock, Eye, FileText } from "lucide-react";
+import { Shield } from "lucide-react";
 import PageContainer from "@/components/layout/PageContainer";
 
 export default function PrivacyPage() {

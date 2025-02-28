@@ -16,7 +16,7 @@ export default function AboutPage() {
         
         <div className="prose prose-lg dark:prose-invert">
           <p className="text-xl text-muted-foreground mb-8">
-            Zemon is India's premier open-source technology platform, fostering innovation and collaboration across all domains of technology development.
+            Zemon is India&apos;s premier open-source technology platform, fostering innovation and collaboration across all domains of technology development.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-12">
@@ -71,7 +71,7 @@ export default function AboutPage() {
 
           <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
           <p className="text-lg text-muted-foreground mb-8">
-            To establish India's largest and most vibrant open-source ecosystem, fostering technological innovation and collaboration across all domains of software development.
+            To establish India&apos;s largest and most vibrant open-source ecosystem, fostering technological innovation and collaboration across all domains of software development.
           </p>
 
           <h2 className="text-3xl font-bold mb-6">Technology Focus Areas</h2>
@@ -97,7 +97,7 @@ export default function AboutPage() {
           <div className="bg-card border rounded-lg p-8 my-12">
             <h2 className="text-2xl font-bold mb-4">Join the Revolution</h2>
             <p className="text-muted-foreground mb-6">
-              Whether you're a seasoned developer or just starting your journey, Zemon provides the platform, tools, and community to help you grow and make an impact in the tech world.
+              Whether you&apos;re a seasoned developer or just starting your journey, Zemon provides the platform, tools, and community to help you grow and make an impact in the tech world.
             </p>
             <button className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
               Get Started Today

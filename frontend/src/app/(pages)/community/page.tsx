@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Plus, Search, Filter, Lightbulb, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,13 +68,13 @@ export default function CommunityPage() {
     }
   };
 
-  const fetchIdeas = async () => {
+  const fetchIdeas = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       const response = await axios.get('http://localhost:5002/api/community/ideas');
       setIdeas(response.data);
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error('Error fetching ideas:', error);
       setError('Failed to load ideas. Please try again later.');
       toast({
@@ -85,7 +85,7 @@ export default function CommunityPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   const fetchResources = () => {
     setActiveTab("resources");
@@ -93,16 +93,12 @@ export default function CommunityPage() {
 
   useEffect(() => {
     fetchIdeas();
-  }, []);
+  }, [fetchIdeas]);
 
   const filteredIdeas = ideas.filter(idea =>
     idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     idea.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleIdeaRefresh = async () => {
-    await fetchIdeas(); // Re-fetch all ideas to get the updated comments
-  };
 
   const handleCommentClick = (idea: Idea) => {
     setActiveComments({
@@ -118,7 +114,11 @@ export default function CommunityPage() {
 
   return (
     <PageContainer>
-      <div className={`py-6 space-y-8 transition-all duration-300 ${activeComments ? 'mr-96' : ''}`}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-6xl mx-auto py-12"
+      >
         {/* Header Section */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -171,27 +171,20 @@ export default function CommunityPage() {
               ) : error ? (
                 <div className="col-span-full text-center py-8 text-red-500">{error}</div>
               ) : filteredIdeas.length > 0 ? (
-                filteredIdeas.map((idea, index) => (
-                  <motion.div
+                filteredIdeas.map((idea) => (
+                  <IdeaCard
                     key={idea._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <IdeaCard
-                      idea={{
-                        id: idea._id,
-                        title: idea.title,
-                        description: idea.description,
-                        author: idea.author || null,
-                        comments: idea.comments || [],
-                        createdAt: idea.createdAt,
-                      }}
-                      onDelete={fetchIdeas}
-                      onRefresh={fetchIdeas}
-                      onCommentClick={() => handleCommentClick(idea)}
-                    />
-                  </motion.div>
+                    idea={{
+                      id: idea._id,
+                      title: idea.title,
+                      description: idea.description,
+                      author: idea.author,
+                      comments: idea.comments,
+                      createdAt: idea.createdAt
+                    }}
+                    onDelete={fetchIdeas}
+                    onCommentClick={() => handleCommentClick(idea)}
+                  />
                 ))
               ) : (
                 <div className="col-span-full text-center py-8">
@@ -205,7 +198,7 @@ export default function CommunityPage() {
             <ResourceList />
           </TabsContent>
         </Tabs>
-      </div>
+      </motion.div>
 
       <AddIdeaModal
         isOpen={isAddIdeaOpen}

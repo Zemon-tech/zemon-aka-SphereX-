@@ -19,81 +19,92 @@ export const search = async (req: Request, res: Response, next: NextFunction) =>
 
     logger.info(`Searching for: ${query}`);
 
-    // Perform parallel searches across all content types
-    const [repos, tools, ideas, resources, news, events, users] = await Promise.all([
+    const trimmedQuery = query.trim();
+    // Create regex patterns for prefix match and contains match
+    const prefixRegex = new RegExp(`^${trimmedQuery}`, 'i');
+    const containsRegex = new RegExp(trimmedQuery, 'i');
+
+    // First, search for users
+    const users = await User.find({
+      $or: [
+        // Prefix matches first
+        { name: prefixRegex },
+        { displayName: prefixRegex },
+        // Then contains matches
+        { name: containsRegex },
+        { displayName: containsRegex }
+      ]
+    })
+      .limit(5)
+      .select('name displayName avatar')
+      .lean();
+
+    // Then search other content types
+    const [repos, tools, ideas, resources, news, events] = await Promise.all([
       // Search repositories
-      Repo.find(
-        { $text: { $search: query } },
-        { score: { $meta: 'textScore' } }
-      )
-        .sort({ score: { $meta: 'textScore' } })
+      Repo.find({
+        name: containsRegex
+      })
         .limit(5)
         .lean(),
 
       // Search store items
-      StoreItem.find(
-        { $text: { $search: query } },
-        { score: { $meta: 'textScore' } }
-      )
-        .sort({ score: { $meta: 'textScore' } })
+      StoreItem.find({
+        name: containsRegex
+      })
         .limit(5)
         .lean(),
 
       // Search ideas
-      Idea.find(
-        { $text: { $search: query } },
-        { score: { $meta: 'textScore' } }
-      )
-        .sort({ score: { $meta: 'textScore' } })
+      Idea.find({
+        title: containsRegex
+      })
         .limit(5)
         .lean(),
 
       // Search resources
-      Resource.find(
-        { $text: { $search: query } },
-        { score: { $meta: 'textScore' } }
-      )
-        .sort({ score: { $meta: 'textScore' } })
+      Resource.find({
+        title: containsRegex
+      })
         .limit(5)
         .lean(),
 
       // Search news
-      News.find(
-        { $text: { $search: query } },
-        { score: { $meta: 'textScore' } }
-      )
-        .sort({ score: { $meta: 'textScore' } })
+      News.find({
+        title: containsRegex
+      })
         .limit(5)
         .lean(),
 
       // Search events
-      Event.find(
-        { $text: { $search: query } },
-        { score: { $meta: 'textScore' } }
-      )
-        .sort({ score: { $meta: 'textScore' } })
+      Event.find({
+        title: containsRegex
+      })
         .limit(5)
-        .lean(),
-
-      // Search users
-      User.find(
-        { $text: { $search: query } },
-        { score: { $meta: 'textScore' } }
-      )
-        .sort({ score: { $meta: 'textScore' } })
-        .limit(5)
-        .select('name displayName avatar')
         .lean(),
     ]);
 
-    // Transform and combine results
-    const results = [
+    // Transform results and sort them (prefix matches first)
+    const transformedResults = [
+      // Users first
+      ...users.map(user => ({
+        id: user._id.toString(),
+        title: user.displayName || user.name,
+        description: `@${user.name}`,
+        type: 'user' as const,
+        url: `/dashboard/${user.name}`,
+        originalUsername: user.name,
+        isPrefixMatch: user.name.toLowerCase().startsWith(trimmedQuery.toLowerCase()) || 
+                      (user.displayName && user.displayName.toLowerCase().startsWith(trimmedQuery.toLowerCase()))
+      })),
+      // Then other content types
       ...repos.map(repo => ({
         id: repo._id.toString(),
         title: repo.name,
         description: repo.description,
         type: 'repo' as const,
         url: `/repos/${repo._id}`,
+        isPrefixMatch: repo.name.toLowerCase().startsWith(trimmedQuery.toLowerCase())
       })),
       ...tools.map(tool => ({
         id: tool._id.toString(),
@@ -101,6 +112,7 @@ export const search = async (req: Request, res: Response, next: NextFunction) =>
         description: tool.description,
         type: 'tool' as const,
         url: `/store/${tool._id}`,
+        isPrefixMatch: tool.name.toLowerCase().startsWith(trimmedQuery.toLowerCase())
       })),
       ...ideas.map(idea => ({
         id: idea._id.toString(),
@@ -108,6 +120,7 @@ export const search = async (req: Request, res: Response, next: NextFunction) =>
         description: idea.description,
         type: 'idea' as const,
         url: `/community?tab=ideas&id=${idea._id}`,
+        isPrefixMatch: idea.title.toLowerCase().startsWith(trimmedQuery.toLowerCase())
       })),
       ...resources.map(resource => ({
         id: resource._id.toString(),
@@ -115,6 +128,7 @@ export const search = async (req: Request, res: Response, next: NextFunction) =>
         description: resource.description,
         type: 'resource' as const,
         url: `/community?tab=resources&id=${resource._id}`,
+        isPrefixMatch: resource.title.toLowerCase().startsWith(trimmedQuery.toLowerCase())
       })),
       ...news.map(article => ({
         id: article._id.toString(),
@@ -122,6 +136,7 @@ export const search = async (req: Request, res: Response, next: NextFunction) =>
         description: article.excerpt,
         type: 'news' as const,
         url: `/news/${article._id}`,
+        isPrefixMatch: article.title.toLowerCase().startsWith(trimmedQuery.toLowerCase())
       })),
       ...events.map(event => ({
         id: event._id.toString(),
@@ -129,27 +144,26 @@ export const search = async (req: Request, res: Response, next: NextFunction) =>
         description: event.description,
         type: 'event' as const,
         url: `/events/${event._id}`,
-      })),
-      ...users.map(user => ({
-        id: user._id.toString(),
-        title: user.displayName || user.name,
-        description: `@${user.name}`,
-        type: 'user' as const,
-        url: `/dashboard/${user.name}`,
-        originalUsername: user.name
-      })),
+        isPrefixMatch: event.title.toLowerCase().startsWith(trimmedQuery.toLowerCase())
+      }))
     ];
 
-    // Sort results by relevance (if available) or recency
-    results.sort((a, b) => {
-      const scoreA = (a as any).score || 0;
-      const scoreB = (b as any).score || 0;
-      return scoreB - scoreA;
+    // Sort results: Users first, then prefix matches, then contains matches
+    const sortedResults = transformedResults.sort((a, b) => {
+      // Users always come first
+      if (a.type === 'user' && b.type !== 'user') return -1;
+      if (b.type === 'user' && a.type !== 'user') return 1;
+      
+      // Then sort by prefix match
+      if (a.isPrefixMatch && !b.isPrefixMatch) return -1;
+      if (b.isPrefixMatch && !a.isPrefixMatch) return 1;
+      
+      return 0;
     });
 
     res.json({
       success: true,
-      results: results.slice(0, 10), // Limit total results to 10
+      results: sortedResults.slice(0, 10) // Limit total results to 10
     });
   } catch (error) {
     logger.error('Error in search:', error);

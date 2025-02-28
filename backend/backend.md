@@ -20,14 +20,7 @@ Implemented a comprehensive News API with MongoDB for storage and Redis for cach
    - POST `/news/:id/like` - Like/Unlike article
    - POST `/news/:id/comments` - Add comment
 
-3. Redis Caching
-   - Implemented caching for article listings and single article views
-   - Cache invalidation on updates, deletes, likes, and comments
-   - Cache expiration set to 1 hour
-   - Separate cache keys for list and detail views
-   - Automatic cache clearing on content updates
-
-4. Security & Performance
+3. Security & Performance
    - Authentication middleware for protected routes
    - Admin role authorization middleware
    - Role-based access control for create/update/delete operations

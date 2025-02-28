@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { Types } from 'mongoose';
 import News from '../models/news.model';
 import { auth, AuthRequest, adminOrOwnerAuth } from '../middleware/auth.middleware';
-import { setCache, getCache, deleteCache, clearCache } from '../utils/redis';
 import logger from '../utils/logger';
 import { AppError } from '../utils/errors';
 
@@ -14,7 +13,6 @@ declare module '../middleware/auth.middleware' {
 }
 
 const router = Router();
-const CACHE_EXPIRATION = 3600; // 1 hour
 
 // Create news article
 router.post('/', auth, async (req: AuthRequest, res, next) => {
@@ -40,7 +38,6 @@ router.post('/', auth, async (req: AuthRequest, res, next) => {
     });
 
     const savedNews = await news.save();
-    await clearCache('news:*');
     res.status(201).json({ success: true, data: savedNews });
   } catch (error) {
     next(error);
@@ -52,20 +49,13 @@ router.get('/test', async (req, res) => {
   res.json({ message: 'News API is working!' });
 });
 
-// Get all news articles with pagination and caching
+// Get all news articles with pagination
 router.get('/', async (req, res, next) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const cacheKey = `news:all:${page}:${limit}`;
-
-    // Try to get from cache first
-    const cachedData = await getCache(cacheKey);
-    if (cachedData) {
-      return res.json({ success: true, data: cachedData });
-    }
-
     const skip = (page - 1) * limit;
+
     const news = await News.find()
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -83,8 +73,6 @@ router.get('/', async (req, res, next) => {
       },
     };
 
-    // Set cache
-    await setCache(cacheKey, data, CACHE_EXPIRATION);
     res.json({ success: true, data });
   } catch (error) {
     next(error);
@@ -99,13 +87,6 @@ router.get('/:id', async (req, res, next) => {
       throw new AppError('Invalid news ID', 400);
     }
 
-    // Try to get from cache first
-    const cacheKey = `news:${id}`;
-    const cachedData = await getCache(cacheKey);
-    if (cachedData) {
-      return res.json({ success: true, data: cachedData });
-    }
-
     const news = await News.findById(id).lean();
 
     if (!news) {
@@ -116,8 +97,6 @@ router.get('/:id', async (req, res, next) => {
     await News.findByIdAndUpdate(id, { $inc: { views: 1 } });
     news.views = (news.views || 0) + 1;
 
-    // Cache the result
-    await setCache(cacheKey, news, CACHE_EXPIRATION);
     res.json({ success: true, data: news });
   } catch (error) {
     next(error);
@@ -148,8 +127,6 @@ router.put('/:id', auth, async (req: AuthRequest, res, next) => {
       { new: true }
     );
 
-    await clearCache(`news:${id}`);
-    await clearCache('news:all:*');
     res.json({ success: true, data: updatedNews });
   } catch (error) {
     next(error);
@@ -170,8 +147,6 @@ router.delete('/:id', auth, async (req: AuthRequest, res, next) => {
     }
     
     await News.findByIdAndDelete(id);
-    await clearCache(`news:${id}`);
-    await clearCache('news:all:*');
     res.json({ success: true, message: 'News article deleted successfully' });
   } catch (error) {
     next(error);
@@ -199,7 +174,6 @@ router.post('/:id/like', auth, async (req: AuthRequest, res, next) => {
     }
 
     await news.save();
-    await clearCache(`news:${id}`);
     res.json({ success: true, data: news });
   } catch (error) {
     next(error);
@@ -232,7 +206,6 @@ router.post('/:id/comments', auth, async (req: AuthRequest, res, next) => {
     });
 
     await news.save();
-    await clearCache(`news:${id}`);
     
     const updatedNews = await News.findById(id)
       .populate('author', 'name avatar')

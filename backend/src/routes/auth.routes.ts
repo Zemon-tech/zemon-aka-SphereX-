@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/config';
 import User from '../models/user.model';
 import { AppError } from '../utils/errors';
-import { setCache, getCache, deleteCache } from '../utils/redis';
+// Redis import removed
 import logger from '../utils/logger';
 import { auth } from '../middleware/auth.middleware';
 import { AuthRequest } from '../middleware/auth.middleware';
@@ -42,7 +42,6 @@ router.post('/signup', async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
-    // Cache user data
     const userData = {
       id: user._id,
       name: user.name,
@@ -51,7 +50,6 @@ router.post('/signup', async (req, res, next) => {
       avatar: user.avatar,
       role: user.role
     };
-    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
 
     res.status(201).json({
       success: true,
@@ -71,29 +69,29 @@ router.post('/login', async (req, res, next) => {
     const { email, password } = req.body;
 
     // Check if user exists
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       throw new AppError('Invalid credentials', 401);
     }
 
-    // Check password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
+    // Check if password is correct
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
       throw new AppError('Invalid credentials', 401);
     }
 
-    // Generate token with name included
+    // Generate token
     const token = jwt.sign(
       { 
         id: user._id,
-        name: user.name,  // Include name in token
-        role: user.role 
+        name: user.name,
+        role: user.role || 'user'
       },
       config.jwtSecret,
       { expiresIn: '7d' }
     );
 
-    // Cache user data
+    // Cache user data - removed Redis operation
     const userData = {
       id: user._id,
       name: user.name,
@@ -102,7 +100,7 @@ router.post('/login', async (req, res, next) => {
       avatar: user.avatar,
       role: user.role
     };
-    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
+    // Redis operation removed
 
     res.json({
       success: true,
@@ -127,25 +125,7 @@ router.get('/me', async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, config.jwtSecret) as { id: string };
     
-    // Try to get user from cache
-    const cachedUser = await getCache(`user:${decoded.id}`);
-    if (cachedUser) {
-      const userData = JSON.parse(cachedUser);
-      // Get fresh data from database to ensure we have latest GitHub info
-      const user = await User.findById(decoded.id);
-      if (user) {
-        // Update cached data with latest GitHub info
-        userData.github = user.github;
-        userData.github_username = user.github; // Ensure both fields are set
-        await setCache(`user:${decoded.id}`, JSON.stringify(userData), CACHE_EXPIRATION);
-      }
-      return res.json({
-        success: true,
-        data: userData
-      });
-    }
-
-    // If not in cache, get from database
+    // Get from database
     const user = await User.findById(decoded.id);
     if (!user) {
       throw new AppError('User not found', 404);
@@ -160,16 +140,13 @@ router.get('/me', async (req, res, next) => {
       role: user.role,
       company: user.company,
       github: user.github,
-      github_username: user.github, // Ensure both fields are set
+      github_username: user.github,
       linkedin: user.linkedin,
       personalWebsite: user.personalWebsite,
       education: user.education
     };
 
-    // Cache user data
-    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
-
-    res.json({
+    return res.json({
       success: true,
       data: userData
     });
@@ -189,8 +166,7 @@ router.post('/logout', async (req, res, next) => {
     // Verify token to get user ID
     const decoded = jwt.verify(token, config.jwtSecret) as { id: string };
     
-    // Remove user data from cache
-    await deleteCache(`user:${decoded.id}`);
+    // Redis operation removed
 
     res.json({
       success: true,
@@ -271,7 +247,7 @@ router.post('/github/sync', async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
-    // Cache user data
+    // Cache user data - Redis operation removed
     const userData = {
       id: user._id,
       name: user.name,
@@ -281,7 +257,7 @@ router.post('/github/sync', async (req, res, next) => {
       github: user.github,
       role: user.role
     };
-    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
+    // Redis operation removed
 
     res.json({
       success: true,
@@ -368,8 +344,7 @@ router.put('/profile', auth, async (req: AuthRequest, res, next) => {
       education: user.education
     };
 
-    // Update cache
-    await setCache(`user:${user._id}`, JSON.stringify(userData), CACHE_EXPIRATION);
+    // Redis operation removed
 
     res.json({
       success: true,

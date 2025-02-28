@@ -1,6 +1,11 @@
 import { Schema, model } from 'mongoose';
 
 const reviewSchema = new Schema({
+  user_id: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   user_name: {
     type: String,
     default: 'Anonymous'

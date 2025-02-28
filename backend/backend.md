@@ -953,3 +953,51 @@ The profile update endpoint now supports direct password updates without requiri
   - Updated all deletion endpoints to use the new middleware
   - Maintains existing deletion rules for non-admin users
   - Uses MongoDB `role` field to identify admin users 
+
+  ## Redis Removal Implementation Plan
+
+### Phase 1: Preparation (1 Day)
+1. Identify all Redis dependencies:
+   - Configuration files (2 locations)
+   - Utility functions (cache get/set/delete)
+   - Route handlers using caching (Auth, News, Store)
+   - Package dependencies (ioredis)
+
+2. Establish fallback mechanisms:
+   - Implement in-memory cache for critical paths
+   - Identify cache-less performance benchmarks
+
+### Phase 2: Code Removal (2 Days)
+1. Configuration cleanup:
+   - Remove Redis config blocks from:
+     - `src/config/index.ts`
+     - `src/config/config.ts`
+
+2. Utility layer removal:
+   - Delete `src/utils/redis.ts`
+   - Create `src/utils/cache.ts` with no-op implementations
+
+3. Route handler updates:
+   - Remove cache references from:
+     - Auth routes ([setCache](cci:1://file:///d:/zemon/zemon-aka-SphereX-/backend/src/utils/redis.ts:26:0-33:2)/[getCache](cci:1://file:///d:/zemon/zemon-aka-SphereX-/backend/src/utils/redis.ts:35:0-44:2) calls)
+     - News API (cached article endpoints)
+     - Store API (cached product listings)
+
+### Phase 3: Testing & Validation (1 Day)
+1. Comprehensive test plan:
+   - API response validation (ensure no cache dependencies)
+   - Load testing without Redis
+   - Error scenario testing (verify graceful degradation)
+
+2. Monitoring:
+   - Add New Relic metrics for cache-less performance
+   - Configure Sentry alerts for missing cache errors
+
+### Phase 4: Documentation & Cleanup (0.5 Day)
+1. Update architecture diagrams
+2. Remove Redis references from:
+   - Deployment docs
+   - Local setup guide
+3. Update API documentation:
+   - Remove caching headers from endpoint specs
+   - Update rate limiting thresholds

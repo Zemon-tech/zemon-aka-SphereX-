@@ -12,7 +12,6 @@ import { auth, AuthRequest, adminOrOwnerAuth } from '../middleware/auth.middlewa
 import Store from '../models/store.model';
 import { AppError } from '../utils/errors';
 import { Types } from 'mongoose';
-import { clearCache } from '../utils/redis';
 import User from '../models/user.model';
 
 // Extend AuthRequest to include model
@@ -84,8 +83,6 @@ router.delete('/:id', auth, async (req: AuthRequest, res, next) => {
     // Use the adminOrOwnerAuth middleware with 'author' field
     await adminOrOwnerAuth(req, res, async () => {
       await Store.findByIdAndDelete(id);
-      await clearCache(`store:${id}`);
-      await clearCache('store:*');
       res.json({ success: true, message: 'Store item deleted successfully' });
     });
   } catch (error) {
@@ -121,10 +118,6 @@ router.put('/:id/images', auth, async (req: AuthRequest, res, next) => {
     tool.images = tool.images || [];
     tool.images.push(imageUrl);
     await tool.save();
-
-    // Clear cache
-    await clearCache(`store:${id}`);
-    await clearCache('store:*');
 
     res.json({ 
       success: true, 

@@ -8,6 +8,8 @@ export const config = {
   mongoUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/spherex',
   jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
   redis: {
+    // Redis implementation disabled but keeping config for compatibility
+    enabled: false,
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
@@ -33,4 +35,4 @@ export const config = {
     secretKey: process.env.STRIPE_SECRET_KEY,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
   },
-} as const; 
+} as const;

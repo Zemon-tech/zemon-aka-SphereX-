@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import StoreItem from '../models/store.model';
 import { AppError } from '../utils/errors';
-import { setCache, getCache, clearCache } from '../utils/redis';
 import logger from '../utils/logger';
 
 const CACHE_EXPIRATION = 3600; // 1 hour
@@ -12,14 +11,6 @@ export const getAllStoreItems = async (req: Request, res: Response, next: NextFu
     const limit = parseInt(req.query.limit as string) || 12;
     const category = req.query.category as string;
     const status = req.query.status || 'approved';
-
-    const cacheKey = `store:${page}:${limit}:${category || 'all'}:${status}`;
-    
-    // Try to get from cache first
-    const cachedData = await getCache(cacheKey);
-    if (cachedData) {
-      return res.json({ success: true, data: cachedData });
-    }
 
     // Build query
     const query: any = { status };
@@ -47,9 +38,7 @@ export const getAllStoreItems = async (req: Request, res: Response, next: NextFu
       },
     };
 
-    // Set cache
-    await setCache(cacheKey, data, CACHE_EXPIRATION);
-    res.json({ success: true, data });
+    return res.json({ success: true, data });
   } catch (error) {
     logger.error('Error in getAllStoreItems:', error);
     next(error);
@@ -59,14 +48,9 @@ export const getAllStoreItems = async (req: Request, res: Response, next: NextFu
 export const getStoreItemDetails = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const cacheKey = `store:item:${id}`;
-
-    // Try to get from cache first
-    const cachedData = await getCache(cacheKey);
-    if (cachedData) {
-      return res.json({ success: true, data: cachedData });
-    }
-
+    
+    // Cache check removed - always fetch from database
+    
     const item = await StoreItem.findById(id)
       .populate('author', 'name')
       .lean();
@@ -78,8 +62,7 @@ export const getStoreItemDetails = async (req: Request, res: Response, next: Nex
     // Increment views
     await StoreItem.findByIdAndUpdate(id, { $inc: { views: 1 } });
 
-    // Set cache
-    await setCache(cacheKey, item, CACHE_EXPIRATION);
+    // Cache set operation removed
     res.json({ success: true, data: item });
   } catch (error) {
     logger.error('Error in getStoreItemDetails:', error);
@@ -97,8 +80,7 @@ export const addStoreItem = async (req: Request, res: Response, next: NextFuncti
     // Populate the author field
     const populatedItem = await newItem.populate('author', 'name');
 
-    // Clear list cache
-    await clearCache('store:*');
+    // Cache clear operation removed
 
     res.status(201).json({ success: true, data: populatedItem });
   } catch (error) {
@@ -118,13 +100,14 @@ export const addReview = async (req: Request, res: Response, next: NextFunction)
     }
 
     const item = await StoreItem.findById(id);
+
     if (!item) {
       throw new AppError('Store item not found', 404);
     }
 
-    // Check if user has already reviewed
+    // Check if user already reviewed this item
     const existingReviewIndex = item.reviews.findIndex(
-      (review: any) => review.user_name === user.name
+      (review) => review.user_name === user.name
     );
 
     if (existingReviewIndex !== -1) {
@@ -147,8 +130,7 @@ export const addReview = async (req: Request, res: Response, next: NextFunction)
 
     await item.save();
 
-    // Clear item cache
-    await clearCache(`store:item:${id}`);
+    // Cache clear operation removed
 
     res.json({ success: true, data: item });
   } catch (error) {
@@ -168,9 +150,7 @@ export const deleteStoreItem = async (req: Request, res: Response, next: NextFun
 
     await StoreItem.deleteOne({ _id: id });
 
-    // Clear caches
-    await clearCache('store:*');
-    await clearCache(`store:item:${id}`);
+    // Cache clear operations removed
 
     res.json({ success: true, message: 'Store item deleted successfully' });
   } catch (error) {

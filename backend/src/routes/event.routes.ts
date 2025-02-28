@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { Types } from 'mongoose';
+import jwt from 'jsonwebtoken';
+import { config } from '../config/config';
 import Event from '../models/event.model';
 import { auth, AuthRequest, adminOrOwnerAuth } from '../middleware/auth.middleware';
-import { setCache, getCache, deleteCache, clearCache } from '../utils/redis';
 import logger from '../utils/logger';
 import { AppError } from '../utils/errors';
 import ExcelJS from 'exceljs';
@@ -48,9 +49,6 @@ router.post('/', auth, async (req: AuthRequest, res, next) => {
       .populate('organizer', 'name avatar')
       .lean();
 
-    // Clear events list cache
-    await deleteCache('events:list*');
-    
     res.status(201).json({ success: true, data: populatedEvent });
   } catch (error) {
     next(error);
@@ -139,7 +137,21 @@ router.get('/:id', auth, async (req: AuthRequest, res, next) => {
     if (!Types.ObjectId.isValid(id)) {
       throw new AppError('Invalid event ID', 400);
     }
+
+    // Get user ID from token if available
+    const token = req.headers.authorization?.split(' ')[1];
+    let userId = null;
     
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, config.jwtSecret) as { id: string };
+        userId = decoded.id;
+      } catch (error) {
+        // Token invalid, but we'll still show the event
+        logger.warn('Invalid token in event view:', error);
+      }
+    }
+
     const event = await Event.findById(id)
       .populate('organizer', 'name avatar')
       .lean();
@@ -148,32 +160,37 @@ router.get('/:id', auth, async (req: AuthRequest, res, next) => {
       throw new AppError('Event not found', 404);
     }
 
-    // Check if user is registered for the event
-    let isUserRegistered = false;
-    if (req.user?.id) {
-      const attendeeIds = event.attendees.map((id: any) => id.toString());
-      isUserRegistered = attendeeIds.includes(req.user.id);
+    // Increment view count
+    await Event.findByIdAndUpdate(id, { $inc: { clicks: 1 } });
+
+    // Add today to analytics if not already there
+    const today = new Date().toISOString().split('T')[0];
+    await Event.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          'analytics.dailyViews': {
+            date: today,
+            count: 1
+          }
+        }
+      },
+      { upsert: true }
+    );
+
+    // Check if user is registered
+    let isRegistered = false;
+    if (userId) {
+      isRegistered = event.attendees.some(
+        (attendee: any) => attendee.user?.toString() === userId
+      );
     }
 
-    // Update event with registration status
     const eventWithRegistrationStatus = {
       ...event,
-      isUserRegistered
+      isRegistered
     };
 
-    // Update clicks
-    await Event.findByIdAndUpdate(id, {
-      $inc: { clicks: 1 },
-      $push: {
-        'analytics.dailyViews': {
-          date: new Date(),
-          count: 1
-        }
-      }
-    });
-
-    // Clear cache before sending response
-    await clearCache(`events:${id}`);
     res.json({ success: true, data: eventWithRegistrationStatus });
   } catch (error) {
     next(error);
@@ -203,8 +220,6 @@ router.put('/:id', auth, async (req: AuthRequest, res, next) => {
       { new: true }
     ).populate('organizer', 'name avatar');
 
-    await clearCache(`events:${id}`);
-    await clearCache('events:*');
     res.json({ success: true, data: updatedEvent });
   } catch (error) {
     next(error);
@@ -225,8 +240,6 @@ router.delete('/:id', auth, async (req: AuthRequest, res, next) => {
     // Use the adminOrOwnerAuth middleware with 'organizer' field
     await adminOrOwnerAuth(req, res, async () => {
       await Event.findByIdAndDelete(id);
-      await clearCache(`events:${id}`);
-      await clearCache('events:*');
       res.json({ success: true, message: 'Event deleted successfully' });
     }, 'organizer'); // Note: using 'organizer' as the owner field
   } catch (error) {
@@ -286,9 +299,6 @@ router.post('/:id/register', auth, async (req: AuthRequest, res, next) => {
       throw new AppError('Failed to update event', 500);
     }
 
-    // Clear cache after registration
-    await clearCache(`events:${id}`);
-    
     // Return updated registration status
     res.json({ 
       success: true, 
@@ -346,9 +356,6 @@ router.post('/:id/unregister', auth, async (req: AuthRequest, res, next) => {
       throw new AppError('Failed to update event', 500);
     }
 
-    // Clear cache after unregistration
-    await clearCache(`events:${id}`);
-    
     // Return updated registration status
     res.json({ 
       success: true, 

@@ -25,7 +25,7 @@ export default function ContributionGraph() {
 
     const cellSize = 10;
     const cellPadding = 2;
-    const weeksInYear = 52;
+    // const weeksInYear = 52;
     const daysInWeek = 7;
 
     // Draw contribution cells

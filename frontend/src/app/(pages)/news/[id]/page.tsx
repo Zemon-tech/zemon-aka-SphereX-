@@ -80,8 +80,8 @@ export default function NewsDetailPage() {
         } else {
           throw new Error(newsData.message || 'Failed to fetch news detail');
         }
-      } catch {
-        console.error('Error fetching news detail');
+      } catch (error) {
+        console.error('Error fetching news detail:', error);
         toast({
           title: "Error",
           description: "Failed to load content",
@@ -108,6 +108,7 @@ export default function NewsDetailPage() {
       // Reset the copied state after 2 seconds
       setTimeout(() => setIsCopied(false), 2000);
     } catch (error) {
+      console.error('Error copying link:', error);
       toast({
         title: "Error",
         description: "Failed to copy link",
@@ -377,4 +378,4 @@ export default function NewsDetailPage() {
       </div>
     </PageContainer>
   );
-} 
+}

@@ -1,4 +1,5 @@
 import { Octokit } from "@octokit/rest";
+import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 
 const GITHUB_API_BASE = "https://api.github.com";
 
@@ -21,6 +22,11 @@ async function githubFetch(endpoint: string, options: GitHubApiOptions = {}) {
   return response.json();
 }
 
+type GitHubCommit = RestEndpointMethodTypes["repos"]["listCommits"]["response"]["data"][0];
+type GitHubPullRequest = RestEndpointMethodTypes["pulls"]["list"]["response"]["data"][0];
+type GitHubContributor = RestEndpointMethodTypes["repos"]["listContributors"]["response"]["data"][0];
+type GitHubBranch = RestEndpointMethodTypes["repos"]["listBranches"]["response"]["data"][0];
+
 interface GitHubResponse {
   repoData: {
     readme: string;
@@ -42,7 +48,7 @@ interface GitHubResponse {
   pullRequests: Array<{
     title: string;
     author: string;
-    status: string;
+    status: "open" | "closed" | "merged";
     createdAt: string;
     number: number;
     url: string;
@@ -106,19 +112,19 @@ export async function getRepoDetails(owner: string, repo: string): Promise<GitHu
       .sort((a, b) => b.value - a.value);
 
     // Transform commits data with proper typing
-    const commitsByDate = commits.reduce((acc: Record<string, number>, commit: any) => {
-      const date = new Date(commit.commit.author.date).toLocaleDateString();
+    const commitsByDate = commits.reduce((acc: Record<string, number>, commit: GitHubCommit) => {
+      const date = new Date(commit.commit.author?.date || new Date()).toLocaleDateString();
       acc[date] = (acc[date] || 0) + 1;
       return acc;
     }, {});
 
     const activityData = Object.entries(commitsByDate).map(([date, count]) => ({
       date,
-      commits: count as number,
-      pullRequests: pullRequests.filter((pr: any) => 
+      commits: count,
+      pullRequests: pullRequests.filter((pr: GitHubPullRequest) => 
         new Date(pr.created_at).toLocaleDateString() === date
       ).length
-    }));
+    })) as Array<{ date: string; commits: number; pullRequests: number }>;
 
     return {
       repoData: {
@@ -131,29 +137,29 @@ export async function getRepoDetails(owner: string, repo: string): Promise<GitHu
         defaultBranch,
       },
       languages: languagesData,
-      commits: commits.map((commit: any) => ({
-        date: commit.commit.author.date,
-        message: commit.commit.message,
-        author: commit.commit.author.name,
+      commits: commits.map((commit: GitHubCommit) => ({
+        date: commit.commit.author?.date || new Date().toISOString(),
+        message: commit.commit.message || '',
+        author: commit.commit.author?.name || 'Unknown',
         sha: commit.sha,
         url: commit.html_url,
       })),
-      pullRequests: pullRequests.map((pr: any) => ({
+      pullRequests: pullRequests.map((pr: GitHubPullRequest) => ({
         title: pr.title,
-        author: pr.user.login,
+        author: pr.user?.login || 'Unknown',
         status: pr.merged_at ? "merged" : pr.state,
         createdAt: pr.created_at,
         number: pr.number,
         url: pr.html_url,
       })),
-      contributors: contributors.map((contributor: any) => ({
+      contributors: contributors.map((contributor: GitHubContributor) => ({
         login: contributor.login,
         avatar_url: contributor.avatar_url,
         contributions: contributor.contributions,
         profile: contributor.html_url,
       })),
       activityData,
-      branches: branches.map((branch: any) => ({
+      branches: branches.map((branch: GitHubBranch) => ({
         name: branch.name,
         lastCommit: branch.commit.sha,
         protected: branch.protected,
@@ -244,16 +250,16 @@ interface GitHubUserData {
   }>;
 }
 
-interface GitHubRepo {
-  name: string;
-  description: string;
-  html_url: string;
-  stargazers_count: number;
-  forks_count: number;
-  language: string;
-  private: boolean;
-  updated_at: string;
-}
+// interface GitHubRepo {
+//   name: string;
+//   description: string;
+//   html_url: string;
+//   stargazers_count: number;
+//   forks_count: number;
+//   language: string;
+//   private: boolean;
+//   updated_at: string;
+// }
 
 export async function fetchGitHubProfile(username: string): Promise<GitHubUserData> {
   const token = process.env.NEXT_PUBLIC_GITHUB_ACCESS_TOKEN;
@@ -331,27 +337,27 @@ export async function fetchGitHubProfile(username: string): Promise<GitHubUserDa
   }
 }
 
-// Update the helper functions to return proper types
-async function fetchPinnedRepos(username: string): Promise<Array<{
-  name: string;
-  description: string;
-  stars: number;
-  forks: number;
-  language: string;
-}>> {
-  // Temporary implementation
-  return [];
-}
+// // Update the helper functions to return proper types
+// async function fetchPinnedRepos(username: string): Promise<Array<{
+//   name: string;
+//   description: string;
+//   stars: number;
+//   forks: number;
+//   language: string;
+// }>> {
+//   // Temporary implementation
+//   return [];
+// }
 
-async function fetchContributionStats(username: string): Promise<{
-  totalContributions: number;
-  currentStreak: number;
-  longestStreak: number;
-}> {
-  // Temporary implementation
-  return {
-    totalContributions: 0,
-    currentStreak: 0,
-    longestStreak: 0
-  };
-} 
+// async function fetchContributionStats(username: string): Promise<{
+//   totalContributions: number;
+//   currentStreak: number;
+//   longestStreak: number;
+// }> {
+//   // Temporary implementation
+//   return {
+//     totalContributions: 0,
+//     currentStreak: 0,
+//     longestStreak: 0
+//   };
+// } 

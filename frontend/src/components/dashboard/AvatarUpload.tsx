@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, Check, Loader2 } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import Image from "next/image";
 
 interface AvatarUploadProps {
   currentAvatar?: string;
@@ -62,6 +63,7 @@ export default function AvatarUpload({ currentAvatar, onUpload }: AvatarUploadPr
         description: "Profile picture updated successfully",
       });
     } catch (error) {
+      console.error('Error uploading profile picture:', error);
       toast({
         title: "Error",
         description: "Failed to upload profile picture",
@@ -91,10 +93,13 @@ export default function AvatarUpload({ currentAvatar, onUpload }: AvatarUploadPr
         onDrop={handleDrop}
         animate={{ scale: isDragging ? 1.05 : 1 }}
       >
-        <img
+        <Image
           src={currentAvatar || "/placeholder-avatar.jpg"}
           alt="Profile"
           className="w-full h-full object-cover"
+          width={96}
+          height={96}
+          unoptimized={currentAvatar ? true : false}
         />
         
         <AnimatePresence>

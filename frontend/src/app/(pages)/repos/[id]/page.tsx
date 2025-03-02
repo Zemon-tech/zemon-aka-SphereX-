@@ -77,33 +77,52 @@ interface Repository {
 }
 
 interface GithubData {
-  repoData?: {
+  repoData: {
     readme: string;
+    [key: string]: any;
   };
-  languages?: string[];
-  branches?: string[];
+  languages: Array<{
+    name: string;
+    value: number;
+    color: string;
+    bytes: number;
+  }>;
   commits: Array<{
     date: string;
-    commits: number;
+    message: string;
+    author: string;
+    sha: string;
+    url: string;
   }>;
-  repoInfo?: {
-    owner: string;
-    name: string;
-    defaultBranch: string;
-  };
+  pullRequests: Array<{
+    title: string;
+    author: string;
+    status: "open" | "closed" | "merged";
+    createdAt: string;
+    number: number;
+    url: string;
+  }>;
+  contributors: Array<{
+    login: string;
+    avatar_url: string;
+    contributions: number;
+    profile: string;
+  }>;
   activityData: Array<{
     date: string;
     commits: number;
     pullRequests: number;
   }>;
-  pullRequests: Array<{
-    id: number;
-    title: string;
-    number: number;
-    state: string;
-    createdAt: string;
-    updatedAt: string;
+  branches: Array<{
+    name: string;
+    lastCommit: string;
+    protected: boolean;
   }>;
+  repoInfo: {
+    owner: string;
+    name: string;
+    defaultBranch: string;
+  };
 }
 
 export default function RepoDetailPage() {

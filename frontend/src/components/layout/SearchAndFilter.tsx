@@ -15,17 +15,17 @@ interface SearchAndFilterProps {
   extraActions?: React.ReactNode;
 }
 
-const categories = [
-  { label: "All Categories", value: "all" },
-  { label: "Developer Tools", value: "Developer Tools" },
-  { label: "Productivity", value: "Productivity" },
-  { label: "Design", value: "Design" },
-  { label: "Testing", value: "Testing" },
-  { label: "Analytics", value: "Analytics" },
-  { label: "DevOps", value: "DevOps" },
-  { label: "Security", value: "Security" },
-  { label: "Database", value: "Database" },
-];
+// const categories = [
+//   { label: "All Categories", value: "all" },
+//   { label: "Developer Tools", value: "Developer Tools" },
+//   { label: "Productivity", value: "Productivity" },
+//   { label: "Design", value: "Design" },
+//   { label: "Testing", value: "Testing" },
+//   { label: "Analytics", value: "Analytics" },
+//   { label: "DevOps", value: "DevOps" },
+//   { label: "Security", value: "Security" },
+//   { label: "Database", value: "Database" },
+// ];
 
 export default function SearchAndFilter({
   placeholder = "Search...",

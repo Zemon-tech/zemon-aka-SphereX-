@@ -203,10 +203,21 @@ export default function StorePage() {
 
       <div className="space-y-6">
         <SearchAndFilter
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
+          value={searchQuery}
+          onChange={setSearchQuery}
+          filter={selectedCategory}
+          onFilterChange={setSelectedCategory}
+          filterOptions={[
+            { label: "All Categories", value: "all" },
+            { label: "Developer Tools", value: "Developer Tools" },
+            { label: "Productivity", value: "Productivity" },
+            { label: "Design", value: "Design" },
+            { label: "Testing", value: "Testing" },
+            { label: "Analytics", value: "Analytics" },
+            { label: "DevOps", value: "DevOps" },
+            { label: "Security", value: "Security" },
+            { label: "Database", value: "Database" }
+          ]}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

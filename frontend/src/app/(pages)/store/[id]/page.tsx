@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Star, Book, Code } from "lucide-react";
 import Link from "next/link";
@@ -62,9 +62,31 @@ export default function StoreItemPage() {
   const [isAddingImage, setIsAddingImage] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  const fetchStoreItem = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store/${params.id}`);
+      const data = await response.json();
+      if (data.success) {
+        setTool(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch store item details');
+      }
+    } catch (error) {
+      console.error('Error fetching store item details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load store item details",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [params.id, toast]);
+
   useEffect(() => {
     fetchStoreItem();
-  }, [params.id]);
+  }, [fetchStoreItem]);
 
   useEffect(() => {
     // Find user's review when tool data is loaded
@@ -103,28 +125,6 @@ export default function StoreItemPage() {
       }
     }
   }, []);
-
-  const fetchStoreItem = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store/${params.id}`);
-      const data = await response.json();
-      if (data.success) {
-        setTool(data.data);
-      } else {
-        throw new Error(data.message || 'Failed to fetch store item details');
-      }
-    } catch (error) {
-      console.error('Error fetching store item details:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load store item details",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleAddImage = async () => {
     try {

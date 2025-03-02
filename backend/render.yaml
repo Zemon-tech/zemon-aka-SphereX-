@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: spherex-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5002
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GITHUB_ACCESS_TOKEN
+        sync: false
+    healthCheckPath: /api/health
+    autoDeploy: true
